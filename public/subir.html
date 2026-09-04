@@ -120,6 +120,14 @@
   .submit-btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
   .form-error{ color:var(--danger); font-size:13px; min-height:16px; }
 
+  .login-panel{ max-width:460px; margin:0 auto 42px; background:var(--glass); border:1px solid var(--border); border-radius:22px; padding:26px; backdrop-filter:blur(18px); }
+  .login-panel h2{ font-size:26px; }
+  .login-panel p{ color:var(--text-dim); font-size:14px; line-height:1.5; margin:8px 0 22px; }
+  .login-form{ display:flex; flex-direction:column; gap:14px; }
+  .login-form .submit-btn{ width:100%; margin-top:4px; }
+  .logout-btn{ float:right; border:1px solid var(--border); background:transparent; color:var(--text-dim); padding:8px 12px; border-radius:9px; cursor:pointer; }
+  .logout-btn:hover{ color:var(--text); border-color:var(--violet-2); }
+
   .manage-section{ margin-top:42px; }
   .manage-head{ margin-bottom:16px; }
   .manage-head h2{ font-size:28px; }
@@ -172,6 +180,25 @@
     <p>Cargá una foto clara y los datos de la prenda. Los pedidos de esta publicación van a llegar por WhatsApp al número configurado en el catálogo.</p>
   </div>
 
+  <section class="login-panel" id="login-panel">
+    <h2>Iniciar sesión</h2>
+    <p>Ingresá con tu usuario administrador para publicar y administrar prendas.</p>
+    <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
+      <div>
+        <label for="admin-user">Usuario</label>
+        <input type="text" id="admin-user" autocomplete="username" required>
+      </div>
+      <div>
+        <label for="admin-password">Contraseña</label>
+        <input type="password" id="admin-password" autocomplete="current-password" required>
+      </div>
+      <div class="form-error" id="login-error"></div>
+      <button type="submit" class="submit-btn" id="login-btn">Iniciar sesión</button>
+    </form>
+  </section>
+
+  <div class="admin-content" id="admin-content" hidden>
+    <button class="logout-btn" type="button" onclick="logout()">Cerrar sesión</button>
   <div class="panel">
     <div class="dz-wrap">
       <div class="dropzone" id="dropzone" onclick="if(event.target.id!=='dz-remove')document.getElementById('foto-input').click()">
@@ -238,6 +265,7 @@
       <div class="manage-empty">Cargando prendas...</div>
     </div>
   </section>
+  </div>
 </main>
 
 <div class="toast" id="toast"><span class="dot"></span><span id="toast-text">Prenda publicada</span></div>
@@ -250,6 +278,9 @@ const dropzone = document.getElementById('dropzone');
 const fotoInput = document.getElementById('foto-input');
 const dzPreview = document.getElementById('dz-preview');
 const manageList = document.getElementById('manage-list');
+const loginPanel = document.getElementById('login-panel');
+const adminContent = document.getElementById('admin-content');
+const loginTokenKey = 'reviste_admin_token';
 
 fotoInput.addEventListener('change', e=>{
   if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
@@ -298,6 +329,51 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
+function authHeaders(){
+  const token = sessionStorage.getItem(loginTokenKey);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function showAdmin(){
+  loginPanel.hidden = true;
+  adminContent.hidden = false;
+  loadManageList();
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  const errorEl = document.getElementById('login-error');
+  const button = document.getElementById('login-btn');
+  errorEl.textContent = '';
+  button.disabled = true;
+
+  try{
+    const res = await fetch(`${API_URL}/api/admin/login`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: document.getElementById('admin-user').value.trim(),
+        password: document.getElementById('admin-password').value
+      })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'No se pudo iniciar sesión.');
+    sessionStorage.setItem(loginTokenKey, data.token);
+    document.getElementById('login-form').reset();
+    showAdmin();
+  }catch(err){
+    errorEl.textContent = err.message;
+  }finally{
+    button.disabled = false;
+  }
+}
+
+function logout(){
+  sessionStorage.removeItem(loginTokenKey);
+  adminContent.hidden = true;
+  loginPanel.hidden = false;
+}
+
 function escapeHtml(value){
   const div = document.createElement('div');
   div.textContent = value ?? '';
@@ -306,7 +382,7 @@ function escapeHtml(value){
 
 async function loadManageList(){
   try{
-    const res = await fetch(`${API_URL}/api/prendas`);
+    const res = await fetch(`${API_URL}/api/prendas`, { headers: authHeaders() });
     if(!res.ok) throw new Error('No se pudieron cargar las prendas.');
     const items = await res.json();
     renderManageList(items);
@@ -354,7 +430,7 @@ async function saveItem(button){
   try{
     const res = await fetch(`${API_URL}/api/prendas/${card.dataset.id}`, {
       method: 'PATCH',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', ...authHeaders()},
       body: JSON.stringify(payload)
     });
     const data = await res.json().catch(()=>({}));
@@ -373,7 +449,7 @@ async function deleteItem(button){
   button.disabled = true;
 
   try{
-    const res = await fetch(`${API_URL}/api/prendas/${card.dataset.id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/api/prendas/${card.dataset.id}`, { method: 'DELETE', headers: authHeaders() });
     const data = await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(data.error || 'No se pudo eliminar la prenda.');
     card.remove();
@@ -419,7 +495,7 @@ async function handleSubmit(e){
   try{
     const res = await fetch(`${API_URL}/api/prendas`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', ...authHeaders()},
       body: JSON.stringify(item)
     });
 
@@ -438,7 +514,7 @@ async function handleSubmit(e){
   }
 }
 
-loadManageList();
+if(sessionStorage.getItem(loginTokenKey)) showAdmin();
 </script>
 
 </body>

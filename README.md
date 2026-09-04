@@ -26,9 +26,20 @@ Abrir:
 - `GET /api/health`
 - `GET /api/prendas`
 - `GET /api/prendas/:id`
+- `POST /api/admin/login`
 - `POST /api/prendas`
 - `PATCH /api/prendas/:id`
 - `DELETE /api/prendas/:id`
+
+Las operaciones de administración requieren iniciar sesión. En Render, crear estas
+variables de entorno:
+
+```text
+ADMIN_USER=tu_usuario_admin
+ADMIN_PASSWORD=tu_contraseña_admin
+```
+
+No incluir estas credenciales en el código frontend ni en el repositorio.
 
 ## Render
 

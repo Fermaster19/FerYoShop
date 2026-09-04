@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -8,6 +9,9 @@ const PORT = process.env.PORT || 10000;
 const defaultDataDir = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data');
 const DATA_DIR = process.env.DATA_DIR || defaultDataDir;
 const DATA_FILE = path.join(DATA_DIR, 'prendas.json');
+const ADMIN_USER = process.env.ADMIN_USER || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const adminSessions = new Set();
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
@@ -43,8 +47,31 @@ function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+function requireAdmin(req, res, next) {
+  const authorization = req.get('authorization') || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  if (!token || !adminSessions.has(token)) {
+    return res.status(401).json({ error: 'Sesión no válida o vencida.' });
+  }
+  next();
+}
+
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'reviste-api' });
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body || {};
+  if (!ADMIN_USER || !ADMIN_PASSWORD) {
+    return res.status(503).json({ error: 'El acceso administrador no está configurado.' });
+  }
+  if (username !== ADMIN_USER || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  adminSessions.add(token);
+  res.json({ token });
 });
 
 app.get('/api/prendas', (req, res) => {
@@ -66,7 +93,7 @@ app.get('/api/prendas/:id', (req, res) => {
   }
 });
 
-app.post('/api/prendas', (req, res) => {
+app.post('/api/prendas', requireAdmin, (req, res) => {
   try {
     const { nombre, precio, categoria, talle, condicion, descripcion, imagen } = req.body || {};
 
@@ -109,7 +136,7 @@ app.post('/api/prendas', (req, res) => {
   }
 });
 
-app.patch('/api/prendas/:id', (req, res) => {
+app.patch('/api/prendas/:id', requireAdmin, (req, res) => {
   try {
     const items = readItems();
     const index = items.findIndex(item => item.id === req.params.id);
@@ -152,7 +179,7 @@ app.patch('/api/prendas/:id', (req, res) => {
   }
 });
 
-app.delete('/api/prendas/:id', (req, res) => {
+app.delete('/api/prendas/:id', requireAdmin, (req, res) => {
   try {
     const items = readItems();
     const index = items.findIndex(i => i.id === req.params.id);
