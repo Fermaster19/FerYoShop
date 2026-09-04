@@ -1,3 +1,5 @@
+create extension if not exists pgcrypto;
+
 create table if not exists public.prendas (
   id text primary key,
   nombre text not null,
@@ -31,8 +33,8 @@ create policy "Public can check credentials"
   on public.usuarios for select
   using (true);
 
-insert into public.usuarios (username, password)
-values ('yoyo1001', 'Yohan100106')
+insert into public.usuarios (id, username, password)
+values (gen_random_uuid(), 'yoyo1001', 'Yohan100106')
 on conflict (username) do update set password = excluded.password;
 
 create index if not exists prendas_created_at_idx on public.prendas (created_at desc);
