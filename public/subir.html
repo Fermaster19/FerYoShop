@@ -353,7 +353,13 @@ async function handleLogin(e){
     document.getElementById('login-form').reset();
     showAdmin();
   }catch(err){
-    errorEl.textContent = err.message;
+    if(err.message === 'Invalid login credentials'){
+      errorEl.textContent = 'Usuario o contraseña incorrectos.';
+    }else if(err.message === 'Email not confirmed'){
+      errorEl.textContent = 'Confirmá el usuario en Supabase antes de ingresar.';
+    }else{
+      errorEl.textContent = err.message || 'No se pudo iniciar sesión.';
+    }
   }finally{
     button.disabled = false;
   }
