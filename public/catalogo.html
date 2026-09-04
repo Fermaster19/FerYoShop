@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviste — catálogo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #050310;
+    --glass: rgba(255,255,255,0.045);
+    --border: rgba(255,255,255,0.09);
+    --violet: #9163FF;
+    --violet-2: #C7B3FF;
+    --blue: #3E7BFA;
+    --blue-2: #7FB1FF;
+    --text: #F3F1FA;
+    --text-dim: #9791B5;
+    --whatsapp: #25D366;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    font-family:'Inter', sans-serif;
+    background:var(--bg);
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.brand,.num{ font-family:'Bricolage Grotesque', sans-serif; margin:0; }
+  ::selection{ background:var(--violet); color:#fff; }
+  :focus-visible{ outline:2px solid var(--violet-2); outline-offset:3px; }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+
+  /* ---------- Fondo mesh ---------- */
+  .mesh{ position:fixed; inset:0; z-index:-1; overflow:hidden; }
+  .blob{ position:absolute; border-radius:50%; filter:blur(90px); opacity:.5; }
+  .blob-1{ width:520px; height:520px; background:radial-gradient(circle, var(--violet), transparent 70%); top:-160px; right:-120px; animation:float1 22s ease-in-out infinite; }
+  .blob-2{ width:460px; height:460px; background:radial-gradient(circle, var(--blue), transparent 70%); bottom:-140px; left:-100px; animation:float2 26s ease-in-out infinite; }
+  @keyframes float1{ 0%,100%{ transform:translate(0,0);} 50%{ transform:translate(-40px, 40px);} }
+  @keyframes float2{ 0%,100%{ transform:translate(0,0);} 50%{ transform:translate(30px, -30px);} }
+
+  /* ---------- Marquee de anuncios ---------- */
+  .announce{
+    background:linear-gradient(90deg, var(--blue), var(--violet));
+    color:#08061a; font-weight:700; font-size:12.5px; letter-spacing:0.01em;
+    overflow:hidden; white-space:nowrap; padding:9px 0;
+  }
+  .announce-track{ display:inline-block; padding-left:100%; animation:marquee 26s linear infinite; }
+  .announce span{ margin:0 34px; }
+  @keyframes marquee{ from{ transform:translateX(0);} to{ transform:translateX(-100%);} }
+
+  /* ---------- Nav ---------- */
+  header{ position:sticky; top:0; z-index:50; display:flex; justify-content:center; padding:16px 5vw; }
+  .navbar{
+    width:100%; max-width:1180px; display:flex; align-items:center; justify-content:center;
+    padding:14px 18px; border-radius:999px;
+    background:var(--glass); border:1px solid var(--border);
+    backdrop-filter:blur(18px);
+  }
+  .brand{ font-size:20px; font-weight:700; display:flex; align-items:center; gap:9px; letter-spacing:-0.01em; }
+  .brand-mark{ width:10px; height:10px; border-radius:3px; background:linear-gradient(135deg, var(--blue), var(--violet)); rotate:12deg; }
+
+  main{ max-width:1180px; margin:0 auto; padding:0 5vw 100px; }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:60px 0 40px; display:grid; grid-template-columns:1.3fr 0.7fr; gap:40px; align-items:end; }
+  @media (max-width:820px){ .hero{ grid-template-columns:1fr; } }
+  .eyebrow{ color:var(--text-dim); font-size:14px; margin-bottom:16px; }
+  .hero h1{
+    font-size:clamp(38px, 6vw, 72px); line-height:0.98; font-weight:800; letter-spacing:-0.03em;
+    background:linear-gradient(120deg, #fff 30%, var(--violet-2) 75%, var(--blue-2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p{ color:var(--text-dim); font-size:16.5px; max-width:460px; margin-top:18px; line-height:1.6; }
+  .hero-card{
+    background:var(--glass); border:1px solid var(--border); border-radius:22px;
+    padding:26px; backdrop-filter:blur(14px);
+  }
+  .hero-card .num{ font-size:46px; font-weight:800; background:linear-gradient(120deg, var(--blue-2), var(--violet-2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero-card .label{ color:var(--text-dim); font-size:13px; margin-top:4px; }
+
+  /* ---------- Filtros ---------- */
+  .filters{ display:flex; gap:10px; flex-wrap:wrap; padding:8px 0 30px; }
+  .chip{
+    border:1px solid var(--border); background:var(--glass); color:var(--text-dim);
+    padding:9px 18px; border-radius:999px; font-size:13.5px; font-weight:500; cursor:pointer;
+    transition:all .15s ease; backdrop-filter:blur(10px);
+  }
+  .chip.active{ border-color:transparent; color:#08061a; background:linear-gradient(135deg, var(--blue-2), var(--violet-2)); font-weight:700; }
+  .chip:not(.active):hover{ color:var(--text); border-color:var(--border); }
+
+  /* ---------- Grid ---------- */
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:22px; }
+  .card{
+    position:relative; border-radius:20px; overflow:hidden;
+    background:var(--glass); border:1px solid var(--border);
+    display:flex; flex-direction:column;
+    transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+  }
+  .card:hover{ transform:translateY(-5px); border-color:var(--violet); box-shadow:0 16px 40px rgba(145,99,255,0.18); }
+  .card-img-wrap{ position:relative; }
+  .card-img{ aspect-ratio:4/5; width:100%; object-fit:cover; background:#0f0c22; display:block; }
+  .card-badge{
+    position:absolute; top:12px; left:12px; font-size:11px; font-weight:700; padding:5px 11px; border-radius:7px;
+    backdrop-filter:blur(6px);
+    background:rgba(143,240,198,0.16); color:#8FF0C6; border:1px solid rgba(143,240,198,0.3);
+  }
+  .card-body{ padding:16px 18px 18px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .card-name{ font-size:15.5px; font-weight:600; line-height:1.3; }
+  .card-price{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:19px; color:var(--violet-2); }
+  .card-meta{ display:flex; gap:7px; flex-wrap:wrap; }
+  .tag{ font-size:11px; padding:4px 10px; border-radius:7px; background:rgba(255,255,255,0.05); color:var(--text-dim); border:1px solid var(--border); }
+  .card-desc{ font-size:13px; color:var(--text-dim); line-height:1.5; }
+  .wa-btn{
+    margin-top:auto; display:flex; align-items:center; justify-content:center; gap:8px;
+    text-decoration:none; font-weight:700; font-size:13.5px; color:#08061a;
+    background:linear-gradient(135deg, var(--blue-2), var(--violet-2));
+    padding:12px; border-radius:12px; transition:transform .15s ease, filter .15s ease;
+  }
+  .wa-btn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+
+  /* ---------- Empty state ---------- */
+  .empty{ text-align:center; padding:90px 20px; border:1px dashed var(--border); border-radius:22px; background:var(--glass); }
+  .empty svg{ opacity:.55; margin-bottom:18px; }
+  .empty h3{ font-size:21px; font-weight:700; }
+  .empty p{ color:var(--text-dim); font-size:14px; margin-top:8px; max-width:340px; margin-left:auto; margin-right:auto; }
+
+  footer{
+    padding:36px 5vw; border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; align-items:center;
+  }
+  .footer-wa{ display:flex; align-items:center; gap:8px; color:var(--text-dim); font-size:13.5px; text-decoration:none; }
+  .footer-wa:hover{ color:var(--text); }
+  footer .copy{ color:var(--text-dim); font-size:12.5px; }
+
+  .fade-in{ animation:fadeIn .5s ease both; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+
+<div class="mesh"><div class="blob blob-1"></div><div class="blob blob-2"></div></div>
+
+<div class="announce"><div class="announce-track">
+  <span>✿ ENVÍOS A TODO EL PAÍS</span>
+  <span>✿ PEDIDOS POR WHATSAPP</span>
+  <span>✿ PRENDAS ÚNICAS, STOCK LIMITADO</span>
+  <span>✿ ENVÍOS A TODO EL PAÍS</span>
+  <span>✿ PEDIDOS POR WHATSAPP</span>
+  <span>✿ PRENDAS ÚNICAS, STOCK LIMITADO</span>
+</div></div>
+
+<header>
+  <div class="navbar">
+    <div class="brand"><span class="brand-mark"></span>Reviste</div>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Moda de segunda mano, prenda por prenda</div>
+      <h1>Encontrá tu próxima prenda favorita.</h1>
+      <p>Piezas únicas seleccionadas a mano. Escribinos por WhatsApp y coordinamos el pedido al toque.</p>
+    </div>
+    <div class="hero-card">
+      <div class="num" id="stat-count">0</div>
+      <div class="label">prendas disponibles</div>
+    </div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+  <div class="grid" id="grid"></div>
+
+  <div class="empty" id="empty-state" style="display:none;">
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 3.5L4 7v13a1 1 0 001 1h14a1 1 0 001-1V7l-4-3.5"/><path d="M8 3.5a4 4 0 008 0"/></svg>
+    <h3>Todavía no hay prendas publicadas</h3>
+    <p>Muy pronto vas a encontrar acá las primeras piezas del catálogo.</p>
+  </div>
+</main>
+
+<footer>
+  <a class="footer-wa" href="#" id="footer-wa-link" target="_blank" rel="noopener">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 004.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.13c-.24.68-1.4 1.33-1.93 1.4-.5.07-1.11.1-1.79-.11a16.4 16.4 0 01-1.63-.6c-2.87-1.24-4.75-4.13-4.9-4.32-.14-.2-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.26-.29.57-.36.76-.36h.55c.18 0 .42-.07.65.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.15.32-.3.5-.14.17-.3.38-.43.51-.14.14-.29.3-.13.58.17.29.75 1.24 1.61 2 1.1.98 2.03 1.29 2.32 1.43.29.14.46.12.63-.07.17-.2.72-.84.91-1.13.19-.29.38-.24.63-.14.26.1 1.63.77 1.91.91.29.14.48.21.55.33.07.12.07.68-.16 1.34z"/></svg>
+    Pedidos por WhatsApp
+  </a>
+  <span class="copy">Reviste — moda de segunda mano</span>
+</footer>
+
+<script>
+// ⚠️ Reemplazá este número por el WhatsApp real de la tienda (código de país + número, sin + ni espacios)
+const WHATSAPP_NUMBER = '5493534000000';
+
+const API_URL = window.REVISTE_API_URL || '';
+let items = [];
+let activeCategory = 'Todas';
+const CATEGORIES = ['Todas','Remeras','Camisas','Buzos y camperas','Pantalones','Vestidos y polleras','Calzado','Accesorios'];
+
+document.getElementById('footer-wa-link').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Quería consultar por el catálogo de Reviste 🙂')}`;
+
+async function loadItems(){
+  try{
+    const res = await fetch(`${API_URL}/api/prendas`);
+    if(!res.ok) throw new Error('No se pudieron cargar las prendas');
+    items = await res.json();
+    items.sort((a,b)=> b.createdAt - a.createdAt);
+  }catch(e){
+    console.error(e);
+    items = [];
+  }
+}
+
+function renderFilters(){
+  const wrap = document.getElementById('filters');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach(cat=>{
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (cat===activeCategory ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = ()=>{ activeCategory = cat; renderFilters(); renderGrid(); };
+    wrap.appendChild(btn);
+  });
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str ?? '';
+  return d.innerHTML;
+}
+
+function waLinkFor(item){
+  const precio = Number(item.precio).toLocaleString('es-AR');
+  const msg = `Hola! Te escribo por "${item.nombre}" (talle ${item.talle}, $${precio}) que vi en el catálogo de Reviste. ¿Sigue disponible?`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('empty-state');
+  document.getElementById('stat-count').textContent = items.length;
+
+  const filtered = activeCategory==='Todas' ? items : items.filter(i=>i.categoria===activeCategory);
+
+  if(items.length===0){
+    grid.style.display='none';
+    empty.style.display='block';
+    return;
+  }
+  grid.style.display='grid';
+  empty.style.display = filtered.length===0 ? 'block' : 'none';
+
+  grid.innerHTML = '';
+  filtered.forEach((item, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'card fade-in';
+    card.style.animationDelay = (idx*0.03)+'s';
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        <img class="card-img" src="${item.imagen || ''}" alt="${escapeHtml(item.nombre)}">
+        <span class="card-badge">Nuevo</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${escapeHtml(item.nombre)}</div>
+        <div class="card-price">$${Number(item.precio).toLocaleString('es-AR')}</div>
+        <div class="card-meta">
+          <span class="tag">${escapeHtml(item.categoria)}</span>
+          <span class="tag">Talle ${escapeHtml(item.talle)}</span>
+        </div>
+        ${item.descripcion ? `<div class="card-desc">${escapeHtml(item.descripcion)}</div>` : ''}
+        <a class="wa-btn" href="${waLinkFor(item)}" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 004.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.13c-.24.68-1.4 1.33-1.93 1.4-.5.07-1.11.1-1.79-.11a16.4 16.4 0 01-1.63-.6c-2.87-1.24-4.75-4.13-4.9-4.32-.14-.2-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.26-.29.57-.36.76-.36h.55c.18 0 .42-.07.65.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.15.32-.3.5-.14.17-.3.38-.43.51-.14.14-.29.3-.13.58.17.29.75 1.24 1.61 2 1.1.98 2.03 1.29 2.32 1.43.29.14.46.12.63-.07.17-.2.72-.84.91-1.13.19-.29.38-.24.63-.14.26.1 1.63.77 1.91.91.29.14.48.21.55.33.07.12.07.68-.16 1.34z"/></svg>
+          Consultar por WhatsApp
+        </a>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+async function init(){
+  await loadItems();
+  renderFilters();
+  renderGrid();
+}
+init();
+</script>
+
+</body>
+</html>

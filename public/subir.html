@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviste — subir prenda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #050310;
+    --glass: rgba(255,255,255,0.045);
+    --glass-strong: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.09);
+    --violet: #9163FF;
+    --violet-2: #C7B3FF;
+    --blue: #3E7BFA;
+    --blue-2: #7FB1FF;
+    --text: #F3F1FA;
+    --text-dim: #9791B5;
+    --danger: #FF7A7A;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    font-family:'Inter', sans-serif;
+    background:var(--bg);
+    overflow-x:hidden;
+  }
+  h1,h2,.brand{ font-family:'Bricolage Grotesque', sans-serif; margin:0; }
+  ::selection{ background:var(--violet); color:#fff; }
+  :focus-visible{ outline:2px solid var(--violet-2); outline-offset:3px; }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+
+  .mesh{ position:fixed; inset:0; z-index:-1; overflow:hidden; }
+  .blob{ position:absolute; border-radius:50%; filter:blur(90px); opacity:.5; }
+  .blob-1{ width:480px; height:480px; background:radial-gradient(circle, var(--blue), transparent 70%); top:-140px; left:-100px; animation:float1 24s ease-in-out infinite; }
+  .blob-2{ width:420px; height:420px; background:radial-gradient(circle, var(--violet), transparent 70%); bottom:-120px; right:-100px; animation:float2 20s ease-in-out infinite; }
+  @keyframes float1{ 0%,100%{ transform:translate(0,0);} 50%{ transform:translate(30px, 30px);} }
+  @keyframes float2{ 0%,100%{ transform:translate(0,0);} 50%{ transform:translate(-30px, -20px);} }
+
+  header{ position:sticky; top:0; z-index:50; display:flex; justify-content:center; padding:16px 5vw; }
+  .navbar{
+    width:100%; max-width:1180px; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; border-radius:999px;
+    background:var(--glass); border:1px solid var(--border);
+    backdrop-filter:blur(18px);
+  }
+  .brand{ font-size:20px; font-weight:700; display:flex; align-items:center; gap:9px; letter-spacing:-0.01em; }
+  .brand-mark{ width:10px; height:10px; border-radius:3px; background:linear-gradient(135deg, var(--blue), var(--violet)); rotate:12deg; }
+  .navtag{ font-size:12px; color:var(--text-dim); border:1px solid var(--border); padding:6px 14px; border-radius:999px; }
+
+  main{ max-width:1080px; margin:0 auto; padding:56px 5vw 100px; }
+
+  .page-head{ max-width:600px; margin-bottom:40px; }
+  .eyebrow{ color:var(--text-dim); font-size:14px; margin-bottom:14px; }
+  .page-head h1{
+    font-size:clamp(32px, 5vw, 50px); font-weight:800; letter-spacing:-0.02em; line-height:1.04;
+    background:linear-gradient(120deg, #fff 30%, var(--violet-2) 80%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .page-head p{ color:var(--text-dim); margin-top:14px; line-height:1.6; font-size:15.5px; }
+
+  .panel{
+    display:grid; grid-template-columns:360px 1fr; gap:28px;
+    background:var(--glass); border:1px solid var(--border); border-radius:26px;
+    padding:28px; backdrop-filter:blur(18px);
+  }
+  @media (max-width:780px){ .panel{ grid-template-columns:1fr; } }
+
+  .dz-wrap{ display:flex; flex-direction:column; gap:16px; }
+  .dropzone{
+    border:1.5px dashed var(--border); border-radius:20px; background:rgba(255,255,255,0.02);
+    aspect-ratio:4/5; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; cursor:pointer; text-align:center; padding:20px;
+    transition:border-color .15s ease, background .15s ease; position:relative; overflow:hidden;
+  }
+  .dropzone.drag{ border-color:var(--violet); background:rgba(145,99,255,0.08); }
+  .dropzone img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .dropzone .dz-label{ color:var(--text-dim); font-size:13px; z-index:1; }
+  .dropzone .dz-label b{ color:var(--text); display:block; margin-bottom:4px; font-size:14.5px; font-family:'Bricolage Grotesque'; font-weight:700; }
+  .dropzone input{ display:none; }
+  .dz-icon{ z-index:1; color:var(--text-dim); }
+  .dz-remove{
+    position:absolute; top:10px; right:10px; z-index:2;
+    background:rgba(5,3,16,0.75); border:1px solid var(--border); backdrop-filter:blur(6px);
+    color:var(--text); width:30px; height:30px; border-radius:50%;
+    cursor:pointer; display:none; align-items:center; justify-content:center; font-size:16px;
+  }
+  .dropzone.has-image .dz-remove{ display:flex; }
+  .dropzone.has-image .dz-label, .dropzone.has-image .dz-icon{ display:none; }
+  .dz-hint{ color:var(--text-dim); font-size:12.5px; text-align:center; }
+
+  form.upload-form{ display:flex; flex-direction:column; gap:20px; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:520px){ .field-row{ grid-template-columns:1fr; } }
+  label{ font-size:13px; font-weight:600; color:var(--text-dim); display:block; margin-bottom:8px; }
+  input[type=text], input[type=number], select, textarea{
+    width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--border);
+    color:var(--text); padding:13px 15px; border-radius:13px;
+    font-family:'Inter'; font-size:14.5px; transition:border-color .15s ease, background .15s ease;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--violet); background:rgba(255,255,255,0.05); }
+  textarea{ resize:vertical; min-height:90px; line-height:1.5; }
+  input::placeholder, textarea::placeholder{ color:#5C5779; }
+  select{
+    appearance:none;
+    background-image:linear-gradient(45deg, transparent 50%, var(--text-dim) 50%), linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+    background-position:calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size:5px 5px, 5px 5px; background-repeat:no-repeat;
+  }
+
+  .submit-btn{
+    align-self:flex-start; margin-top:4px;
+    background:linear-gradient(135deg, var(--blue-2), var(--violet-2));
+    color:#08061a; border:none; padding:15px 30px; border-radius:999px;
+    font-family:'Inter'; font-weight:700; font-size:14.5px; cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+  .submit-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 28px rgba(145,99,255,0.3); }
+  .submit-btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+  .form-error{ color:var(--danger); font-size:13px; min-height:16px; }
+
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:rgba(20,16,40,0.9); border:1px solid var(--violet);
+    color:var(--text); padding:14px 22px; border-radius:14px; backdrop-filter:blur(10px);
+    font-size:14px; font-weight:500; opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease; z-index:100;
+    display:flex; align-items:center; gap:10px;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast .dot{ width:8px; height:8px; border-radius:50%; background:#8FF0C6; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<div class="mesh"><div class="blob blob-1"></div><div class="blob blob-2"></div></div>
+
+<header>
+  <div class="navbar">
+    <div class="brand"><span class="brand-mark"></span>Reviste</div>
+    <span class="navtag">Panel de carga</span>
+  </div>
+</header>
+
+<main>
+  <div class="page-head">
+    <div class="eyebrow">Publicar</div>
+    <h1>Subí una prenda al catálogo</h1>
+    <p>Cargá una foto clara y los datos de la prenda. Los pedidos de esta publicación van a llegar por WhatsApp al número configurado en el catálogo.</p>
+  </div>
+
+  <div class="panel">
+    <div class="dz-wrap">
+      <div class="dropzone" id="dropzone" onclick="if(event.target.id!=='dz-remove')document.getElementById('foto-input').click()">
+        <button type="button" class="dz-remove" id="dz-remove" onclick="event.stopPropagation(); removeImage();">✕</button>
+        <img id="dz-preview" style="display:none;">
+        <svg class="dz-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        <div class="dz-label"><b>Subí una foto</b>Arrastrá una imagen o hacé clic para elegirla</div>
+        <input type="file" id="foto-input" accept="image/*">
+      </div>
+      <div class="dz-hint">Formatos JPG o PNG · se optimiza automáticamente</div>
+    </div>
+
+    <form class="upload-form" id="upload-form" onsubmit="handleSubmit(event)">
+      <div class="field-row">
+        <div>
+          <label for="f-nombre">Nombre de la prenda</label>
+          <input type="text" id="f-nombre" placeholder="Ej: Campera de jean oversize" required>
+        </div>
+        <div>
+          <label for="f-precio">Precio</label>
+          <input type="number" id="f-precio" placeholder="Ej: 15000" min="0" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div>
+          <label for="f-categoria">Categoría</label>
+          <select id="f-categoria" required>
+            <option value="" disabled selected>Elegí una opción</option>
+            <option>Remeras</option>
+            <option>Camisas</option>
+            <option>Buzos y camperas</option>
+            <option>Pantalones</option>
+            <option>Vestidos y polleras</option>
+            <option>Calzado</option>
+            <option>Accesorios</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-talle">Talle</label>
+          <select id="f-talle" required>
+            <option value="" disabled selected>Elegí una opción</option>
+            <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>Único</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="f-desc">Descripción</label>
+        <textarea id="f-desc" placeholder="Contá el estado, la marca, la tela o cualquier detalle que ayude a decidir la compra."></textarea>
+      </div>
+
+      <div class="form-error" id="form-error"></div>
+      <button type="submit" class="submit-btn" id="submit-btn">Publicar prenda</button>
+    </form>
+  </div>
+</main>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toast-text">Prenda publicada</span></div>
+
+<script>
+const API_URL = window.REVISTE_API_URL || '';
+let pendingImage = null;
+
+const dropzone = document.getElementById('dropzone');
+const fotoInput = document.getElementById('foto-input');
+const dzPreview = document.getElementById('dz-preview');
+
+fotoInput.addEventListener('change', e=>{
+  if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+});
+['dragover'].forEach(evt=>dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(evt=>dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e=>{
+  if(e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file){
+  if(!file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const maxW = 900;
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      pendingImage = canvas.toDataURL('image/jpeg', 0.82);
+      dzPreview.src = pendingImage;
+      dzPreview.style.display = 'block';
+      dropzone.classList.add('has-image');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage(){
+  pendingImage = null;
+  dzPreview.src = '';
+  dzPreview.style.display = 'none';
+  dropzone.classList.remove('has-image');
+  fotoInput.value = '';
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+async function handleSubmit(e){
+  e.preventDefault();
+  const errorEl = document.getElementById('form-error');
+  errorEl.textContent = '';
+
+  if(!pendingImage){
+    errorEl.textContent = 'Subí una foto de la prenda antes de publicar.';
+    return;
+  }
+
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const precio = document.getElementById('f-precio').value;
+  const categoria = document.getElementById('f-categoria').value;
+  const talle = document.getElementById('f-talle').value;
+  const condicion = 'Nuevo';
+  const descripcion = document.getElementById('f-desc').value.trim();
+
+  if(!nombre || !precio || !categoria || !talle){
+    errorEl.textContent = 'Completá todos los campos obligatorios.';
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Publicando...';
+
+  const item = {
+    nombre, precio: Number(precio), categoria, talle, condicion, descripcion,
+    imagen: pendingImage
+  };
+
+  try{
+    const res = await fetch(`${API_URL}/api/prendas`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(item)
+    });
+
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'No se pudo publicar la prenda.');
+
+    showToast('Prenda publicada correctamente');
+    document.getElementById('upload-form').reset();
+    removeImage();
+    setTimeout(()=>{ window.location.href = 'catalogo.html'; }, 900);
+  }catch(err){
+    console.error(err);
+    errorEl.textContent = err.message || 'No se pudo guardar la publicación. Probá de nuevo.';
+    btn.disabled = false;
+    btn.textContent = 'Publicar prenda';
+  }
+}
+</script>
+
+</body>
+</html>
