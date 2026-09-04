@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
-const SUPABASE_ANON_KEY = 'TU_ANON_O_PUBLISHABLE_KEY';
+const SUPABASE_URL = 'https://febfdwrmtbwdxiziqlba.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Wz-rcjQ5daTBCwGOMOX8DA_cYfech1R';
 
 window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
