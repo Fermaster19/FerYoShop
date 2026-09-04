@@ -131,7 +131,7 @@
   .login-panel p{ color:var(--text-dim); font-size:14px; line-height:1.5; margin:8px 0 22px; }
   .login-form{ display:flex; flex-direction:column; gap:14px; }
   .login-form .submit-btn{ width:100%; margin-top:4px; }
-  .logout-btn{ float:right; border:1px solid var(--border); background:transparent; color:var(--text-dim); padding:8px 12px; border-radius:9px; cursor:pointer; }
+  .logout-btn{ border:1px solid var(--border); background:transparent; color:var(--text-dim); padding:8px 12px; border-radius:9px; cursor:pointer; font-family:'Inter'; font-size:12px; }
   .logout-btn:hover{ color:var(--text); border-color:var(--violet-2); }
 
   .manage-section{ margin-top:42px; }
@@ -176,6 +176,7 @@
   <div class="navbar">
     <div class="brand"><img class="brand-mark" src="/logo.jpeg" alt="Logo FerYo">FerYo</div>
     <span class="navtag">Panel de carga</span>
+    <button class="logout-btn" id="nav-logout" type="button" onclick="logout()" hidden>Cerrar sesión</button>
   </div>
 </header>
 
@@ -204,7 +205,6 @@
   </section>
 
   <div class="admin-content" id="admin-content" hidden>
-    <button class="logout-btn" type="button" onclick="logout()">Cerrar sesión</button>
   <div class="panel">
     <div class="dz-wrap">
       <div class="dropzone" id="dropzone" onclick="if(event.target.id!=='dz-remove')document.getElementById('foto-input').click()">
@@ -288,6 +288,7 @@ const dzPreview = document.getElementById('dz-preview');
 const manageList = document.getElementById('manage-list');
 const loginPanel = document.getElementById('login-panel');
 const adminContent = document.getElementById('admin-content');
+const navLogout = document.getElementById('nav-logout');
 
 fotoInput.addEventListener('change', e=>{
   if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
@@ -339,6 +340,7 @@ function showToast(msg){
 function showAdmin(){
   loginPanel.hidden = true;
   adminContent.hidden = false;
+  navLogout.hidden = false;
   loadManageList();
 }
 
@@ -380,6 +382,7 @@ function logout(){
   adminAuthenticated = false;
   adminContent.hidden = true;
   loginPanel.hidden = false;
+  navLogout.hidden = true;
 }
 
 function escapeHtml(value){
