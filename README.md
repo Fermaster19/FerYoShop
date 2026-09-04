@@ -15,7 +15,8 @@ publicaciones, modificaciones, estados y eliminaciones se guardan directamente
 en Supabase.
 
 El acceso usa Supabase Auth. En **Authentication > Users**, creá el usuario
-`yoyo1001@feryo.local` con la contraseña elegida.
+`yoyo1001@feryo.local` con la contraseña `Yohan100106`. La tabla `usuarios`
+guarda el nombre visible `yoyo1001`, pero nunca almacena la contraseña.
 
 ## Supabase
 
