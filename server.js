@@ -94,6 +94,7 @@ app.post('/api/prendas', (req, res) => {
       condicion: condicion ? String(condicion).trim() : 'Nuevo',
       descripcion: descripcion ? String(descripcion).trim() : '',
       imagen,
+      estado: 'Disponible',
       createdAt: Date.now()
     };
 
@@ -105,6 +106,49 @@ app.post('/api/prendas', (req, res) => {
   } catch (err) {
     console.error('Error creando prenda:', err);
     res.status(500).json({ error: 'No se pudo guardar la publicación.' });
+  }
+});
+
+app.patch('/api/prendas/:id', (req, res) => {
+  try {
+    const items = readItems();
+    const index = items.findIndex(item => item.id === req.params.id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: 'Prenda no encontrada' });
+    }
+
+    const current = items[index];
+    const { nombre, precio, categoria, talle, condicion, descripcion, imagen, estado } = req.body || {};
+    const allowedStates = ['Disponible', 'Reservada', 'Vendida', 'Oculta'];
+
+    if (precio !== undefined && (!Number.isFinite(Number(precio)) || Number(precio) < 0)) {
+      return res.status(400).json({ error: 'El precio no es válido.' });
+    }
+    if (imagen !== undefined && (typeof imagen !== 'string' || !imagen.startsWith('data:image/'))) {
+      return res.status(400).json({ error: 'La imagen no es válida.' });
+    }
+    if (estado !== undefined && !allowedStates.includes(estado)) {
+      return res.status(400).json({ error: 'El estado no es válido.' });
+    }
+
+    items[index] = {
+      ...current,
+      ...(nombre !== undefined && { nombre: String(nombre).trim() }),
+      ...(precio !== undefined && { precio: Number(precio) }),
+      ...(categoria !== undefined && { categoria: String(categoria).trim() }),
+      ...(talle !== undefined && { talle: String(talle).trim() }),
+      ...(condicion !== undefined && { condicion: String(condicion).trim() }),
+      ...(descripcion !== undefined && { descripcion: String(descripcion).trim() }),
+      ...(imagen !== undefined && { imagen }),
+      ...(estado !== undefined && { estado: String(estado) })
+    };
+
+    writeItems(items);
+    res.json(items[index]);
+  } catch (err) {
+    console.error('Error actualizando prenda:', err);
+    res.status(500).json({ error: 'No se pudo actualizar la publicación.' });
   }
 });
 

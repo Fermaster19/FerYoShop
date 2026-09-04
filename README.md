@@ -27,6 +27,7 @@ Abrir:
 - `GET /api/prendas`
 - `GET /api/prendas/:id`
 - `POST /api/prendas`
+- `PATCH /api/prendas/:id`
 - `DELETE /api/prendas/:id`
 
 ## Render

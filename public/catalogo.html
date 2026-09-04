@@ -258,7 +258,7 @@ function renderGrid(){
     card.innerHTML = `
       <div class="card-img-wrap">
         <img class="card-img" src="${item.imagen || ''}" alt="${escapeHtml(item.nombre)}">
-        <span class="card-badge">Nuevo</span>
+        <span class="card-badge">${escapeHtml(item.estado || 'Disponible')}</span>
       </div>
       <div class="card-body">
         <div class="card-name">${escapeHtml(item.nombre)}</div>

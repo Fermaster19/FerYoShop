@@ -120,6 +120,28 @@
   .submit-btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
   .form-error{ color:var(--danger); font-size:13px; min-height:16px; }
 
+  .manage-section{ margin-top:42px; }
+  .manage-head{ margin-bottom:16px; }
+  .manage-head h2{ font-size:28px; }
+  .manage-head p{ color:var(--text-dim); margin:8px 0 0; font-size:14px; }
+  .manage-list{ display:flex; flex-direction:column; gap:12px; }
+  .manage-item{
+    display:grid; grid-template-columns:86px 1fr auto; gap:16px; align-items:center;
+    padding:14px; background:var(--glass); border:1px solid var(--border); border-radius:18px;
+  }
+  .manage-item img{ width:86px; aspect-ratio:4/5; object-fit:cover; border-radius:12px; background:#0f0c22; }
+  .manage-fields{ display:grid; grid-template-columns:1.5fr .7fr 1fr 1fr; gap:10px; }
+  .manage-fields label{ margin-bottom:5px; font-size:11px; }
+  .manage-fields input, .manage-fields select{ padding:10px 11px; font-size:13px; }
+  .manage-description{ grid-column:1 / -1; }
+  .manage-actions{ display:flex; flex-direction:column; gap:8px; }
+  .action-btn{ border:1px solid var(--border); background:var(--glass-strong); color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; white-space:nowrap; }
+  .action-btn:hover{ border-color:var(--violet-2); }
+  .action-btn.danger{ color:var(--danger); }
+  .manage-empty{ color:var(--text-dim); padding:24px; border:1px dashed var(--border); border-radius:16px; text-align:center; }
+  @media (max-width:780px){ .manage-item{ grid-template-columns:70px 1fr; } .manage-item img{ width:70px; } .manage-fields{ grid-template-columns:1fr 1fr; } .manage-actions{ grid-column:1 / -1; flex-direction:row; } }
+  @media (max-width:480px){ .manage-fields{ grid-template-columns:1fr; } .manage-description{ grid-column:auto; } }
+
   .toast{
     position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
     background:rgba(20,16,40,0.9); border:1px solid var(--violet);
@@ -206,6 +228,16 @@
       <button type="submit" class="submit-btn" id="submit-btn">Publicar prenda</button>
     </form>
   </div>
+
+  <section class="manage-section" aria-labelledby="manage-title">
+    <div class="manage-head">
+      <h2 id="manage-title">Administrar prendas</h2>
+      <p>Editá los datos, cambiá el estado o eliminá una publicación.</p>
+    </div>
+    <div class="manage-list" id="manage-list">
+      <div class="manage-empty">Cargando prendas...</div>
+    </div>
+  </section>
 </main>
 
 <div class="toast" id="toast"><span class="dot"></span><span id="toast-text">Prenda publicada</span></div>
@@ -217,6 +249,7 @@ let pendingImage = null;
 const dropzone = document.getElementById('dropzone');
 const fotoInput = document.getElementById('foto-input');
 const dzPreview = document.getElementById('dz-preview');
+const manageList = document.getElementById('manage-list');
 
 fotoInput.addEventListener('change', e=>{
   if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
@@ -263,6 +296,93 @@ function showToast(msg){
   document.getElementById('toast-text').textContent = msg;
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function escapeHtml(value){
+  const div = document.createElement('div');
+  div.textContent = value ?? '';
+  return div.innerHTML;
+}
+
+async function loadManageList(){
+  try{
+    const res = await fetch(`${API_URL}/api/prendas`);
+    if(!res.ok) throw new Error('No se pudieron cargar las prendas.');
+    const items = await res.json();
+    renderManageList(items);
+  }catch(err){
+    manageList.innerHTML = `<div class="manage-empty">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderManageList(items){
+  if(!items.length){
+    manageList.innerHTML = '<div class="manage-empty">Todavía no hay prendas publicadas.</div>';
+    return;
+  }
+
+  manageList.innerHTML = items.map(item=>{
+    const estado = item.estado || 'Disponible';
+    return `<article class="manage-item" data-id="${escapeHtml(item.id)}">
+      <img src="${item.imagen || ''}" alt="${escapeHtml(item.nombre)}">
+      <div class="manage-fields">
+        <div><label>Nombre</label><input data-field="nombre" type="text" value="${escapeHtml(item.nombre)}"></div>
+        <div><label>Precio</label><input data-field="precio" type="number" min="0" value="${Number(item.precio)}"></div>
+        <div><label>Categoría</label><input data-field="categoria" type="text" value="${escapeHtml(item.categoria)}"></div>
+        <div><label>Talle</label><input data-field="talle" type="text" value="${escapeHtml(item.talle)}"></div>
+        <div><label>Estado</label><select data-field="estado">
+          ${['Disponible','Reservada','Vendida','Oculta'].map(option=>`<option ${option===estado ? 'selected' : ''}>${option}</option>`).join('')}
+        </select></div>
+        <div class="manage-description"><label>Descripción</label><input data-field="descripcion" type="text" value="${escapeHtml(item.descripcion || '')}"></div>
+      </div>
+      <div class="manage-actions">
+        <button class="action-btn" type="button" onclick="saveItem(this)">Guardar</button>
+        <button class="action-btn danger" type="button" onclick="deleteItem(this)">Eliminar</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+async function saveItem(button){
+  const card = button.closest('.manage-item');
+  const payload = {};
+  card.querySelectorAll('[data-field]').forEach(field=>{
+    payload[field.dataset.field] = field.type === 'number' ? Number(field.value) : field.value.trim();
+  });
+  button.disabled = true;
+
+  try{
+    const res = await fetch(`${API_URL}/api/prendas/${card.dataset.id}`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'No se pudo actualizar la prenda.');
+    showToast('Prenda actualizada correctamente');
+  }catch(err){
+    showToast(err.message);
+  }finally{
+    button.disabled = false;
+  }
+}
+
+async function deleteItem(button){
+  const card = button.closest('.manage-item');
+  if(!confirm('¿Querés eliminar esta prenda?')) return;
+  button.disabled = true;
+
+  try{
+    const res = await fetch(`${API_URL}/api/prendas/${card.dataset.id}`, { method: 'DELETE' });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || 'No se pudo eliminar la prenda.');
+    card.remove();
+    if(!manageList.children.length) renderManageList([]);
+    showToast('Prenda eliminada');
+  }catch(err){
+    button.disabled = false;
+    showToast(err.message);
+  }
 }
 
 async function handleSubmit(e){
@@ -317,6 +437,8 @@ async function handleSubmit(e){
     btn.textContent = 'Publicar prenda';
   }
 }
+
+loadManageList();
 </script>
 
 </body>
