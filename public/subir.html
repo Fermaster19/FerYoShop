@@ -47,7 +47,7 @@
     backdrop-filter:blur(18px);
   }
   .brand{ font-size:20px; font-weight:700; display:flex; align-items:center; gap:9px; letter-spacing:-0.01em; }
-  .brand-mark{ width:10px; height:10px; border-radius:3px; background:linear-gradient(135deg, var(--blue), var(--violet)); rotate:12deg; }
+  .brand-mark{ width:42px; height:42px; border-radius:50%; border:1px solid var(--blue-2); object-fit:cover; display:block; background:#050310; }
   .navtag{ font-size:12px; color:var(--text-dim); border:1px solid var(--border); padding:6px 14px; border-radius:999px; }
 
   main{ max-width:1080px; margin:0 auto; padding:56px 5vw 100px; }
@@ -174,7 +174,7 @@
 
 <header>
   <div class="navbar">
-    <div class="brand"><span class="brand-mark"></span>FerYo</div>
+    <div class="brand"><img class="brand-mark" src="/logo.jpeg" alt="Logo FerYo">FerYo</div>
     <span class="navtag">Panel de carga</span>
   </div>
 </header>
