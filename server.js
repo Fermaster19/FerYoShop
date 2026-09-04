@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -13,7 +15,9 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
   : null;
-const adminSessions = new Set();
+const sessionSecret = ADMIN_PASSWORD
+  ? crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex')
+  : '';
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
@@ -49,7 +53,19 @@ function normalizeItem(row) {
 function requireAdmin(req, res, next) {
   const authorization = req.get('authorization') || '';
   const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
-  if (!token || !adminSessions.has(token)) {
+  const parts = token.split('.');
+  const timestamp = Number(parts[1]);
+  const payload = `${parts[0]}.${parts[1]}`;
+  const expectedSignature = sessionSecret
+    ? crypto.createHmac('sha256', sessionSecret).update(payload).digest('hex')
+    : '';
+  const validSignature = parts[2] && expectedSignature
+    && parts[2].length === expectedSignature.length
+    && crypto.timingSafeEqual(Buffer.from(parts[2]), Buffer.from(expectedSignature));
+  const validTimestamp = Number.isFinite(timestamp)
+    && Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000;
+
+  if (!sessionSecret || parts[0] !== ADMIN_USER || !validSignature || !validTimestamp) {
     return res.status(401).json({ error: 'Sesión no válida o vencida.' });
   }
   next();
@@ -68,8 +84,9 @@ app.post('/api/admin/login', (req, res) => {
     return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
   }
 
-  const token = crypto.randomBytes(32).toString('hex');
-  adminSessions.add(token);
+  const payload = `${ADMIN_USER}.${Date.now()}`;
+  const signature = crypto.createHmac('sha256', sessionSecret).update(payload).digest('hex');
+  const token = `${payload}.${signature}`;
   res.json({ token });
 });
 

@@ -1,4 +1,4 @@
-# Reviste — API + catálogo
+# FerYo — API + catálogo
 
 Proyecto listo para desplegar en Vercel con Supabase.
 
@@ -15,8 +15,13 @@ Proyecto listo para desplegar en Vercel con Supabase.
 
 ```bash
 npm install
+copy .env.example .env
 npm start
 ```
+
+Completá los valores de `.env` con la URL y la clave `service_role` de Supabase.
+Todas las publicaciones, modificaciones, estados y eliminaciones se guardan en
+la tabla `public.prendas` de Supabase; no se usa `data/prendas.json`.
 
 Abrir:
 
