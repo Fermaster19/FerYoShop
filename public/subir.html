@@ -513,7 +513,7 @@ async function handleSubmit(e){
     showToast('Prenda publicada correctamente');
     document.getElementById('upload-form').reset();
     removeImage();
-    setTimeout(()=>{ window.location.href = 'catalogo.html'; }, 900);
+    await loadManageList();
   }catch(err){
     console.error(err);
     errorEl.textContent = err.message || 'No se pudo guardar la publicación. Probá de nuevo.';
