@@ -8,19 +8,36 @@ create table if not exists public.prendas (
   descripcion text not null default '',
   imagen text not null,
   estado text not null default 'Disponible' check (estado in ('Disponible', 'Reservada', 'Vendida', 'Oculta')),
-  created_at bigint not null
+  created_at bigint not null,
+  owner_id uuid references auth.users(id)
 );
 
 alter table public.prendas enable row level security;
+alter table public.prendas add column if not exists owner_id uuid references auth.users(id);
 
 create index if not exists prendas_created_at_idx on public.prendas (created_at desc);
 
-create table if not exists public.admin_users (
-  id uuid primary key default gen_random_uuid(),
-  username text unique not null,
-  password_hash text not null,
-  active boolean not null default true,
-  created_at timestamptz not null default now()
-);
+drop policy if exists "Public can read visible products" on public.prendas;
+drop policy if exists "Authenticated users can insert products" on public.prendas;
+drop policy if exists "Owners can update products" on public.prendas;
+drop policy if exists "Owners can delete products" on public.prendas;
 
-alter table public.admin_users enable row level security;
+create policy "Public can read visible products"
+  on public.prendas for select
+  using (estado <> 'Oculta' or auth.uid() = owner_id);
+
+create policy "Authenticated users can insert products"
+  on public.prendas for insert
+  to authenticated
+  with check (auth.uid() = owner_id);
+
+create policy "Owners can update products"
+  on public.prendas for update
+  to authenticated
+  using (auth.uid() = owner_id)
+  with check (auth.uid() = owner_id);
+
+create policy "Owners can delete products"
+  on public.prendas for delete
+  to authenticated
+  using (auth.uid() = owner_id);

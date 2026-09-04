@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reviste — subir prenda</title>
+<title>FerYo — subir prenda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -168,7 +168,7 @@
 
 <header>
   <div class="navbar">
-    <div class="brand"><span class="brand-mark"></span>Reviste</div>
+    <div class="brand"><span class="brand-mark"></span>FerYo</div>
     <span class="navtag">Panel de carga</span>
   </div>
 </header>
@@ -270,8 +270,9 @@
 
 <div class="toast" id="toast"><span class="dot"></span><span id="toast-text">Prenda publicada</span></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/supabase-client.js"></script>
 <script>
-const API_URL = (window.REVISTE_API_URL || '').replace(/\/$/, '');
 let pendingImage = null;
 
 const dropzone = document.getElementById('dropzone');
@@ -280,7 +281,6 @@ const dzPreview = document.getElementById('dz-preview');
 const manageList = document.getElementById('manage-list');
 const loginPanel = document.getElementById('login-panel');
 const adminContent = document.getElementById('admin-content');
-const loginTokenKey = 'reviste_admin_token';
 
 fotoInput.addEventListener('change', e=>{
   if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
@@ -329,11 +329,6 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
-function authHeaders(){
-  const token = sessionStorage.getItem(loginTokenKey);
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 function showAdmin(){
   loginPanel.hidden = true;
   adminContent.hidden = false;
@@ -348,17 +343,13 @@ async function handleLogin(e){
   button.disabled = true;
 
   try{
-    const res = await fetch(`${API_URL}/api/admin/login`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        username: document.getElementById('admin-user').value.trim(),
-        password: document.getElementById('admin-password').value
-      })
+    const username = document.getElementById('admin-user').value.trim();
+    const password = document.getElementById('admin-password').value;
+    const { error } = await window.supabaseClient.auth.signInWithPassword({
+      email: window.supabaseUserEmail(username),
+      password
     });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || 'No se pudo iniciar sesión.');
-    sessionStorage.setItem(loginTokenKey, data.token);
+    if(error) throw error;
     document.getElementById('login-form').reset();
     showAdmin();
   }catch(err){
@@ -369,7 +360,7 @@ async function handleLogin(e){
 }
 
 function logout(){
-  sessionStorage.removeItem(loginTokenKey);
+  window.supabaseClient.auth.signOut();
   adminContent.hidden = true;
   loginPanel.hidden = false;
 }
@@ -382,10 +373,12 @@ function escapeHtml(value){
 
 async function loadManageList(){
   try{
-    const res = await fetch(`${API_URL}/api/prendas`, { headers: authHeaders() });
-    if(!res.ok) throw new Error('No se pudieron cargar las prendas.');
-    const items = await res.json();
-    renderManageList(items);
+    const { data, error } = await window.supabaseClient
+      .from('prendas')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if(error) throw error;
+    renderManageList(data.map(item=>({ ...item, createdAt: Number(item.created_at) })));
   }catch(err){
     manageList.innerHTML = `<div class="manage-empty">${escapeHtml(err.message)}</div>`;
   }
@@ -428,13 +421,11 @@ async function saveItem(button){
   button.disabled = true;
 
   try{
-    const res = await fetch(`${API_URL}/api/prendas/${card.dataset.id}`, {
-      method: 'PATCH',
-      headers: {'Content-Type': 'application/json', ...authHeaders()},
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || 'No se pudo actualizar la prenda.');
+    const { error } = await window.supabaseClient
+      .from('prendas')
+      .update(payload)
+      .eq('id', card.dataset.id);
+    if(error) throw error;
     showToast('Prenda actualizada correctamente');
   }catch(err){
     showToast(err.message);
@@ -449,9 +440,11 @@ async function deleteItem(button){
   button.disabled = true;
 
   try{
-    const res = await fetch(`${API_URL}/api/prendas/${card.dataset.id}`, { method: 'DELETE', headers: authHeaders() });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || 'No se pudo eliminar la prenda.');
+    const { error } = await window.supabaseClient
+      .from('prendas')
+      .delete()
+      .eq('id', card.dataset.id);
+    if(error) throw error;
     card.remove();
     if(!manageList.children.length) renderManageList([]);
     showToast('Prenda eliminada');
@@ -493,14 +486,14 @@ async function handleSubmit(e){
   };
 
   try{
-    const res = await fetch(`${API_URL}/api/prendas`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', ...authHeaders()},
-      body: JSON.stringify(item)
-    });
-
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || 'No se pudo publicar la prenda.');
+    const { data: { user } } = await window.supabaseClient.auth.getUser();
+    if(!user) throw new Error('La sesión expiró. Iniciá sesión nuevamente.');
+    const { data, error } = await window.supabaseClient
+      .from('prendas')
+      .insert({ ...item, id: crypto.randomUUID(), estado: 'Disponible', created_at: Date.now(), owner_id: user.id })
+      .select()
+      .single();
+    if(error) throw error;
 
     showToast('Prenda publicada correctamente');
     document.getElementById('upload-form').reset();
@@ -514,7 +507,9 @@ async function handleSubmit(e){
   }
 }
 
-if(sessionStorage.getItem(loginTokenKey)) showAdmin();
+window.supabaseClient.auth.getSession().then(({ data })=>{
+  if(data.session) showAdmin();
+});
 </script>
 
 </body>
