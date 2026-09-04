@@ -8,5 +8,3 @@ window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
     detectSessionInUrl: false
   }
 });
-
-window.supabaseUserEmail = username => `${username.trim()}@feryo.local`;

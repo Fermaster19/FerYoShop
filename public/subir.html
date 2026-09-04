@@ -274,6 +274,7 @@
 <script src="/supabase-client.js"></script>
 <script>
 let pendingImage = null;
+let adminAuthenticated = false;
 
 const dropzone = document.getElementById('dropzone');
 const fotoInput = document.getElementById('foto-input');
@@ -345,11 +346,15 @@ async function handleLogin(e){
   try{
     const username = document.getElementById('admin-user').value.trim();
     const password = document.getElementById('admin-password').value;
-    const { error } = await window.supabaseClient.auth.signInWithPassword({
-      email: window.supabaseUserEmail(username),
-      password
-    });
+    const { data, error } = await window.supabaseClient
+      .from('usuarios')
+      .select('id, username')
+      .eq('username', username)
+      .eq('password', password)
+      .maybeSingle();
     if(error) throw error;
+    if(!data) throw new Error('Usuario o contraseña incorrectos.');
+    adminAuthenticated = true;
     document.getElementById('login-form').reset();
     showAdmin();
   }catch(err){
@@ -366,7 +371,7 @@ async function handleLogin(e){
 }
 
 function logout(){
-  window.supabaseClient.auth.signOut();
+  adminAuthenticated = false;
   adminContent.hidden = true;
   loginPanel.hidden = false;
 }
@@ -492,11 +497,9 @@ async function handleSubmit(e){
   };
 
   try{
-    const { data: { user } } = await window.supabaseClient.auth.getUser();
-    if(!user) throw new Error('La sesión expiró. Iniciá sesión nuevamente.');
     const { data, error } = await window.supabaseClient
       .from('prendas')
-      .insert({ ...item, id: crypto.randomUUID(), estado: 'Disponible', created_at: Date.now(), owner_id: user.id })
+      .insert({ ...item, id: crypto.randomUUID(), estado: 'Disponible', created_at: Date.now() })
       .select()
       .single();
     if(error) throw error;
@@ -513,9 +516,6 @@ async function handleSubmit(e){
   }
 }
 
-window.supabaseClient.auth.getSession().then(({ data })=>{
-  if(data.session) showAdmin();
-});
 </script>
 
 </body>

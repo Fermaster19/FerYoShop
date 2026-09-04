@@ -14,9 +14,14 @@ No se utiliza servidor Node, API propia ni almacenamiento local. Todas las
 publicaciones, modificaciones, estados y eliminaciones se guardan directamente
 en Supabase.
 
-El acceso usa Supabase Auth. En **Authentication > Users**, creá el usuario
-`yoyo1001@feryo.local` con la contraseña `Yohan100106`. La tabla `usuarios`
-guarda el nombre visible `yoyo1001`, pero nunca almacena la contraseña.
+El acceso consulta directamente la tabla `public.usuarios`. El SQL crea:
+
+```text
+Usuario: yoyo1001
+Contraseña: Yohan100106
+```
+
+Este método no usa Supabase Auth ni una API propia.
 
 ## Supabase
 
