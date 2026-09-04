@@ -53,13 +53,24 @@
   /* ---------- Nav ---------- */
   header{ position:sticky; top:0; z-index:50; display:flex; justify-content:center; padding:16px 5vw; }
   .navbar{
-    width:100%; max-width:1180px; display:flex; align-items:center; justify-content:center;
+    width:100%; max-width:1180px; display:flex; align-items:center; justify-content:space-between; gap:24px;
     padding:14px 18px; border-radius:999px;
     background:var(--glass); border:1px solid var(--border);
     backdrop-filter:blur(18px);
   }
-  .brand{ font-size:20px; font-weight:700; display:flex; align-items:center; gap:9px; letter-spacing:-0.01em; }
-  .brand-mark{ width:10px; height:10px; border-radius:3px; background:linear-gradient(135deg, var(--blue), var(--violet)); rotate:12deg; }
+  .brand{ font-size:20px; font-weight:700; display:flex; align-items:center; gap:10px; letter-spacing:0.18em; flex-shrink:0; }
+  .brand-mark{ width:46px; height:46px; border-radius:50%; border:1px solid var(--blue-2); background:radial-gradient(circle at 35% 30%, rgba(127,177,255,.35), transparent 38%), rgba(9,8,28,.7); display:grid; place-items:center; position:relative; }
+  .brand-mark::before{ content:'FY'; color:var(--violet-2); font-family:'Bricolage Grotesque'; font-size:16px; letter-spacing:-.12em; transform:translateX(-2px); }
+  .brand-copy{ display:flex; flex-direction:column; line-height:1; }
+  .brand-copy small{ color:var(--text-dim); font-size:8px; letter-spacing:.48em; margin-top:5px; }
+  .nav-links{ display:flex; align-items:center; gap:30px; margin-left:auto; }
+  .nav-links a{ color:var(--text); text-decoration:none; font-size:14px; padding:12px 0; position:relative; }
+  .nav-links a:hover, .nav-links a.active{ color:var(--violet-2); }
+  .nav-links a.active::after{ content:''; position:absolute; left:0; right:0; bottom:3px; height:2px; background:var(--violet-2); box-shadow:0 0 12px var(--violet); }
+  .nav-social{ display:flex; align-items:center; gap:16px; margin-left:10px; }
+  .nav-social a{ color:var(--violet-2); display:grid; place-items:center; }
+  .nav-social a:hover{ color:#fff; }
+  @media (max-width:820px){ .nav-links{ display:none; } .nav-social{ margin-left:auto; } }
 
   main{ max-width:1180px; margin:0 auto; padding:0 5vw 100px; }
 
@@ -74,9 +85,11 @@
   }
   .hero p{ color:var(--text-dim); font-size:16.5px; max-width:460px; margin-top:18px; line-height:1.6; }
   .hero-card{
-    background:var(--glass); border:1px solid var(--border); border-radius:22px;
-    padding:26px; backdrop-filter:blur(14px);
+    background:linear-gradient(135deg, rgba(24,35,91,.55), rgba(38,18,75,.38)); border:1px solid rgba(95,91,220,.3); border-radius:22px;
+    padding:26px; backdrop-filter:blur(14px); display:flex; align-items:center; gap:20px; min-height:126px;
   }
+  .hero-card-icon{ width:54px; height:54px; border-radius:50%; display:grid; place-items:center; color:var(--violet-2); background:rgba(71,35,155,.25); flex-shrink:0; }
+  .hero-card-copy{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
   .hero-card .num{ font-size:46px; font-weight:800; background:linear-gradient(120deg, var(--blue-2), var(--violet-2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .hero-card .label{ color:var(--text-dim); font-size:13px; margin-top:4px; }
 
@@ -123,6 +136,7 @@
   .footer-instagram{ display:flex; align-items:center; gap:8px; color:var(--text-dim); font-size:13.5px; text-decoration:none; }
   .footer-instagram:hover{ color:var(--text); }
   .ig-btn{ background:linear-gradient(135deg, #f58529, #dd2a7b 52%, #8134af); color:#fff; }
+  @media (max-width:520px){ .navbar{ padding:10px 14px; } .brand{ font-size:16px; } .brand-mark{ width:40px; height:40px; } .nav-social{ gap:10px; } .hero-card{ padding:20px; } }
 
   /* ---------- Empty state ---------- */
   .empty{ text-align:center; padding:90px 20px; border:1px dashed var(--border); border-radius:22px; background:var(--glass); }
@@ -157,7 +171,22 @@
 
 <header>
   <div class="navbar">
-    <div class="brand"><span class="brand-mark"></span>FerYo</div>
+    <div class="brand"><span class="brand-mark" aria-label="Logo pendiente"></span><span class="brand-copy">FERYO<small>ROPA</small></span></div>
+    <nav class="nav-links" aria-label="Categorías">
+      <a href="#catalogo" class="active" data-category="Todas">Inicio</a>
+      <a href="#catalogo" data-category="Remeras">Remeras</a>
+      <a href="#catalogo" data-category="Buzos">Buzos</a>
+      <a href="#catalogo" data-category="Pantalones">Pantalones</a>
+      <a href="#catalogo" data-category="Camperas">Camperas</a>
+    </nav>
+    <div class="nav-social">
+      <a href="https://www.instagram.com/feryo_ropa/" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="#" id="nav-wa-link" aria-label="WhatsApp">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 004.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.13c-.24.68-1.4 1.33-1.93 1.4-.5.07-1.11.1-1.79-.11a16.4 16.4 0 01-1.63-.6c-2.87-1.24-4.75-4.13-4.9-4.32-.14-.2-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.26-.29.57-.36.76-.36h.55c.18 0 .42-.07.65.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.15.32-.3.5-.14.17-.3.38-.43.51-.14.14-.29.3-.13.58.17.29.75 1.24 1.61 2 1.1.98 2.03 1.29 2.32 1.43.29.14.46.12.63-.07.17-.2.72-.84.91-1.13.19-.29.38-.24.63-.14.26.1 1.63.77 1.91.91.29.14.48.21.55.33.07.12.07.68-.16 1.34z"/></svg>
+      </a>
+    </div>
   </div>
 </header>
 
@@ -169,13 +198,15 @@
       <p>Piezas únicas seleccionadas a mano. Escribinos por WhatsApp o Instagram y coordinamos el pedido al toque.</p>
     </div>
     <div class="hero-card">
-      <div class="num" id="stat-count">0</div>
-      <div class="label">prendas disponibles</div>
+      <div class="hero-card-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></div>
+      <div class="hero-card-copy"><div class="num" id="stat-count">0</div><div class="label">prendas disponibles</div></div>
     </div>
   </div>
 
-  <div class="filters" id="filters"></div>
-  <div class="grid" id="grid"></div>
+  <div id="catalogo">
+    <div class="filters" id="filters"></div>
+    <div class="grid" id="grid"></div>
+  </div>
 
   <div class="empty" id="empty-state" style="display:none;">
     <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 3.5L4 7v13a1 1 0 001 1h14a1 1 0 001-1V7l-4-3.5"/><path d="M8 3.5a4 4 0 008 0"/></svg>
@@ -211,6 +242,7 @@ const CATEGORIES = ['Todas','Remeras','Remerones','Buzos','Pantalones','Camperas
 
 document.getElementById('footer-wa-link').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Quería consultar por el catálogo de FerYo 🙂')}`;
 document.getElementById('footer-instagram-link').href = `https://www.instagram.com/${INSTAGRAM_USERNAME}/`;
+document.getElementById('nav-wa-link').href = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 async function loadItems(){
   try{
@@ -239,6 +271,16 @@ function renderFilters(){
     wrap.appendChild(btn);
   });
 }
+
+document.querySelectorAll('.nav-links a').forEach(link=>{
+  link.addEventListener('click', ()=>{
+    activeCategory = link.dataset.category;
+    document.querySelectorAll('.nav-links a').forEach(item=>item.classList.remove('active'));
+    link.classList.add('active');
+    renderFilters();
+    renderGrid();
+  });
+});
 
 function escapeHtml(str){
   const d = document.createElement('div');
