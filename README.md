@@ -49,8 +49,11 @@ Agregar un Persistent Disk al servicio:
 
 - Mount Path: `/data`
 
-El servidor detecta automáticamente `/data` y guarda:
+El servidor usa automáticamente `/data` cuando ese directorio existe y guarda:
 `/data/prendas.json`
+
+También podés definir la variable de entorno `DATA_DIR` con valor `/data` en
+Render. Esto es recomendable si querés dejar la ruta configurada explícitamente.
 
 Esto permite no usar una base de datos, manteniendo el catálogo en un archivo.
 
