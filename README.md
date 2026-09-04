@@ -38,8 +38,9 @@ Abrir:
 - `PATCH /api/prendas/:id`
 - `DELETE /api/prendas/:id`
 
-Las operaciones de administración requieren iniciar sesión. En Vercel, crear estas
-variables de entorno:
+Las operaciones de administración requieren iniciar sesión. El usuario administrador
+se guarda en `public.admin_users` de Supabase y la contraseña se almacena como hash.
+Para crear el primer usuario, cargar temporalmente estas variables en Vercel:
 
 ```text
 ADMIN_USER=tu_usuario_admin
@@ -48,7 +49,8 @@ SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 ```
 
-No incluir estas credenciales en el código frontend ni en el repositorio.
+Después del primer inicio de sesión correcto, podés eliminar `ADMIN_USER` y
+`ADMIN_PASSWORD` de Vercel. El usuario seguirá guardado en Supabase.
 
 ## Supabase
 
@@ -65,7 +67,8 @@ La clave `service_role` nunca debe ir en el frontend: la API la usa únicamente 
 2. Usar el preset **Other**.
 3. Dejar el directorio raíz como `.`.
 4. No definir un comando de build.
-5. Agregar las cuatro variables de entorno indicadas arriba.
+5. Agregar `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`. Para crear el primer
+	administrador, agregar también temporalmente `ADMIN_USER` y `ADMIN_PASSWORD`.
 6. Hacer el deploy.
 
 Vercel detectará `api/index.js` como función serverless y servirá la carpeta `public` como archivos estáticos.

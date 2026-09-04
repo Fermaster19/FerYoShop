@@ -5,6 +5,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -15,9 +16,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
   : null;
-const sessionSecret = ADMIN_PASSWORD
-  ? crypto.createHash('sha256').update(ADMIN_PASSWORD).digest('hex')
-  : '';
+const sessionSecret = SUPABASE_SERVICE_ROLE_KEY;
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
@@ -50,6 +49,18 @@ function normalizeItem(row) {
   };
 }
 
+async function bootstrapAdminUser() {
+  if (!supabase || !ADMIN_USER || !ADMIN_PASSWORD) return;
+
+  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
+  const { error } = await supabase.from('admin_users').upsert({
+    username: ADMIN_USER,
+    password_hash: passwordHash,
+    active: true
+  }, { onConflict: 'username' });
+  if (error) throw error;
+}
+
 function requireAdmin(req, res, next) {
   const authorization = req.get('authorization') || '';
   const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
@@ -65,7 +76,7 @@ function requireAdmin(req, res, next) {
   const validTimestamp = Number.isFinite(timestamp)
     && Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000;
 
-  if (!sessionSecret || parts[0] !== ADMIN_USER || !validSignature || !validTimestamp) {
+  if (!sessionSecret || !parts[0] || !validSignature || !validTimestamp) {
     return res.status(401).json({ error: 'Sesión no válida o vencida.' });
   }
   next();
@@ -75,19 +86,32 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'reviste-api', databaseConfigured: Boolean(supabase) });
 });
 
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body || {};
-  if (!ADMIN_USER || !ADMIN_PASSWORD) {
-    return res.status(503).json({ error: 'El acceso administrador no está configurado.' });
-  }
-  if (username !== ADMIN_USER || password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
-  }
+  if (!requireDatabase(res)) return;
 
-  const payload = `${ADMIN_USER}.${Date.now()}`;
-  const signature = crypto.createHmac('sha256', sessionSecret).update(payload).digest('hex');
-  const token = `${payload}.${signature}`;
-  res.json({ token });
+  try {
+    await bootstrapAdminUser();
+    const { data: admin, error } = await supabase
+      .from('admin_users')
+      .select('username, password_hash')
+      .eq('username', username)
+      .eq('active', true)
+      .maybeSingle();
+    if (error) throw error;
+
+    const validPassword = admin && await bcrypt.compare(password || '', admin.password_hash);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+    }
+
+    const payload = `${admin.username}.${Date.now()}`;
+    const signature = crypto.createHmac('sha256', sessionSecret).update(payload).digest('hex');
+    res.json({ token: `${payload}.${signature}` });
+  } catch (err) {
+    console.error('Error iniciando sesión:', err);
+    res.status(500).json({ error: 'No se pudo iniciar sesión.' });
+  }
 });
 
 app.get('/api/prendas', async (req, res) => {
