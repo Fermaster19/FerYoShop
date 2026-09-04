@@ -4,19 +4,13 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
+const { supabase, sessionSecret } = require('./supabase');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-  : null;
-const sessionSecret = SUPABASE_SERVICE_ROLE_KEY;
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));

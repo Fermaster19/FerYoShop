@@ -5,6 +5,7 @@ Proyecto listo para desplegar en Vercel con Supabase.
 ## Estructura
 
 - `server.js` — API REST y servidor local de los HTML.
+- `supabase.js` — conexión centralizada y segura con Supabase.
 - `api/index.js` — función serverless de Vercel.
 - `public/catalogo.html` — catálogo.
 - `public/subir.html` — panel para publicar prendas.
