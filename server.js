@@ -214,7 +214,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Reviste API escuchando en el puerto ${PORT}`);
-  console.log(`Supabase configurado: ${Boolean(supabase)}`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Reviste API escuchando en el puerto ${PORT}`);
+    console.log(`Supabase configurado: ${Boolean(supabase)}`);
+  });
+}
+
+module.exports = app;

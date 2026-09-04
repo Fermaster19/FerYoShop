@@ -1,12 +1,14 @@
 # Reviste — API + catálogo
 
-Proyecto listo para desplegar en Render con Supabase.
+Proyecto listo para desplegar en Vercel con Supabase.
 
 ## Estructura
 
-- `server.js` — API REST y servidor de los HTML.
+- `server.js` — API REST y servidor local de los HTML.
+- `api/index.js` — función serverless de Vercel.
 - `public/catalogo.html` — catálogo.
 - `public/subir.html` — panel para publicar prendas.
+- `public/index.html` — entrada del sitio, redirige al catálogo.
 - `supabase/schema.sql` — esquema de la tabla de publicaciones.
 
 ## Ejecutar localmente
@@ -31,7 +33,7 @@ Abrir:
 - `PATCH /api/prendas/:id`
 - `DELETE /api/prendas/:id`
 
-Las operaciones de administración requieren iniciar sesión. En Render, crear estas
+Las operaciones de administración requieren iniciar sesión. En Vercel, crear estas
 variables de entorno:
 
 ```text
@@ -48,23 +50,20 @@ No incluir estas credenciales en el código frontend ni en el repositorio.
 1. Crear un proyecto en Supabase.
 2. Abrir **SQL Editor** y ejecutar `supabase/schema.sql`.
 3. En **Settings > API**, copiar la URL del proyecto y la clave `service_role`.
-4. Cargar esos valores como variables privadas en Render.
+4. Cargar esos valores como variables privadas en Vercel.
 
 La clave `service_role` nunca debe ir en el frontend: la API la usa únicamente en el servidor.
 
-## Render
+## Vercel
 
-Crear un Web Service conectado al repositorio.
+1. Importar el repositorio en Vercel.
+2. Usar el preset **Other**.
+3. Dejar el directorio raíz como `.`.
+4. No definir un comando de build.
+5. Agregar las cuatro variables de entorno indicadas arriba.
+6. Hacer el deploy.
 
-Build Command:
-```text
-npm install
-```
-
-Start Command:
-```text
-npm start
-```
+Vercel detectará `api/index.js` como función serverless y servirá la carpeta `public` como archivos estáticos.
 
 ## Importante
 
