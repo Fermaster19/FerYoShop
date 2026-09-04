@@ -59,7 +59,8 @@
     backdrop-filter:blur(18px);
   }
   .brand{ font-size:20px; font-weight:700; display:flex; align-items:center; gap:10px; letter-spacing:0.18em; flex-shrink:0; }
-  .brand-mark{ width:46px; height:46px; border-radius:50%; border:1px solid var(--blue-2); object-fit:cover; display:block; background:#050310; }
+  .brand-mark{ width:46px; height:46px; border-radius:50%; border:1px solid var(--blue-2); background:radial-gradient(circle at 35% 30%, rgba(127,177,255,.35), transparent 38%), rgba(9,8,28,.7); display:grid; place-items:center; position:relative; }
+  .brand-mark::before{ content:'FY'; color:var(--violet-2); font-family:'Bricolage Grotesque'; font-size:16px; letter-spacing:-.12em; transform:translateX(-2px); }
   .brand-copy{ display:flex; flex-direction:column; line-height:1; }
   .brand-copy small{ color:var(--text-dim); font-size:8px; letter-spacing:.48em; margin-top:5px; }
   .nav-links{ display:flex; align-items:center; gap:30px; margin-left:auto; }
@@ -170,7 +171,7 @@
 
 <header>
   <div class="navbar">
-    <div class="brand"><img class="brand-mark" src="/logo.jpeg" alt="Logo FerYo"><span class="brand-copy">FERYO<small>ROPA</small></span></div>
+    <div class="brand"><span class="brand-mark" aria-label="Logo pendiente"></span><span class="brand-copy">FERYO<small>ROPA</small></span></div>
     <nav class="nav-links" aria-label="Categorías">
       <a href="#catalogo" class="active" data-category="Todas">Inicio</a>
       <a href="#catalogo" data-category="Remeras">Remeras</a>
@@ -225,7 +226,7 @@
     Pedidos por Instagram
   </a>
   </div>
-  <span class="copy">FerYo — moda de segunda mano</span>
+  <span class="copy">FerYo</span>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
