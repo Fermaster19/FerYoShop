@@ -1,13 +1,13 @@
 # Reviste — API + catálogo
 
-Proyecto listo para desplegar en Render sin base de datos.
+Proyecto listo para desplegar en Render con Supabase.
 
 ## Estructura
 
 - `server.js` — API REST y servidor de los HTML.
 - `public/catalogo.html` — catálogo.
 - `public/subir.html` — panel para publicar prendas.
-- `data/prendas.json` — archivo donde se guardan las publicaciones.
+- `supabase/schema.sql` — esquema de la tabla de publicaciones.
 
 ## Ejecutar localmente
 
@@ -37,9 +37,20 @@ variables de entorno:
 ```text
 ADMIN_USER=tu_usuario_admin
 ADMIN_PASSWORD=tu_contraseña_admin
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 ```
 
 No incluir estas credenciales en el código frontend ni en el repositorio.
+
+## Supabase
+
+1. Crear un proyecto en Supabase.
+2. Abrir **SQL Editor** y ejecutar `supabase/schema.sql`.
+3. En **Settings > API**, copiar la URL del proyecto y la clave `service_role`.
+4. Cargar esos valores como variables privadas en Render.
+
+La clave `service_role` nunca debe ir en el frontend: la API la usa únicamente en el servidor.
 
 ## Render
 
@@ -55,22 +66,8 @@ Start Command:
 npm start
 ```
 
-### Persistent Disk (recomendado)
-
-Agregar un Persistent Disk al servicio:
-
-- Mount Path: `/data`
-
-El servidor usa automáticamente `/data` cuando ese directorio existe y guarda:
-`/data/prendas.json`
-
-También podés definir la variable de entorno `DATA_DIR` con valor `/data` en
-Render. Esto es recomendable si querés dejar la ruta configurada explícitamente.
-
-Esto permite no usar una base de datos, manteniendo el catálogo en un archivo.
-
 ## Importante
 
-Las imágenes se guardan dentro del JSON como Data URL. El formulario ya las reduce a un máximo de 900 px de ancho y JPEG calidad 0.82 antes de enviarlas.
+Las imágenes se guardan dentro de Supabase como Data URL. El formulario ya las reduce a un máximo de 900 px de ancho y JPEG calidad 0.82 antes de enviarlas.
 
-Si el catálogo crece mucho, conviene pasar las imágenes a almacenamiento de objetos (por ejemplo, Cloudinary/S3), pero para un catálogo pequeño esta implementación es sencilla.
+Si el catálogo crece mucho, conviene pasar las imágenes a Supabase Storage o Cloudinary y guardar solo sus URLs.

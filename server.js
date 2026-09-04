@@ -1,50 +1,49 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
-const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const defaultDataDir = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data');
-const DATA_DIR = process.env.DATA_DIR || defaultDataDir;
-const DATA_FILE = path.join(DATA_DIR, 'prendas.json');
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  : null;
 const adminSessions = new Set();
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-function ensureDataFile() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, '[]', 'utf8');
-  }
-}
-
-function readItems() {
-  ensureDataFile();
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    const items = JSON.parse(raw);
-    return Array.isArray(items) ? items : [];
-  } catch (err) {
-    console.error('Error leyendo prendas:', err);
-    throw new Error('No se pudo leer el catálogo');
-  }
-}
-
-function writeItems(items) {
-  ensureDataFile();
-  const tmp = DATA_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(items, null, 2), 'utf8');
-  fs.renameSync(tmp, DATA_FILE);
-}
-
 function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function requireDatabase(res) {
+  if (!supabase) {
+    res.status(503).json({ error: 'La base de datos no está configurada.' });
+    return false;
+  }
+  return true;
+}
+
+function normalizeItem(row) {
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    precio: Number(row.precio),
+    categoria: row.categoria,
+    talle: row.talle,
+    condicion: row.condicion,
+    descripcion: row.descripcion || '',
+    imagen: row.imagen,
+    estado: row.estado || 'Disponible',
+    createdAt: Number(row.created_at)
+  };
 }
 
 function requireAdmin(req, res, next) {
@@ -57,7 +56,7 @@ function requireAdmin(req, res, next) {
 }
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, service: 'reviste-api' });
+  res.json({ ok: true, service: 'reviste-api', databaseConfigured: Boolean(supabase) });
 });
 
 app.post('/api/admin/login', (req, res) => {
@@ -74,26 +73,40 @@ app.post('/api/admin/login', (req, res) => {
   res.json({ token });
 });
 
-app.get('/api/prendas', (req, res) => {
+app.get('/api/prendas', async (req, res) => {
+  if (!requireDatabase(res)) return;
   try {
-    const items = readItems().sort((a, b) => b.createdAt - a.createdAt);
-    res.json(items);
+    const { data, error } = await supabase
+      .from('prendas')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data.map(normalizeItem));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error leyendo prendas:', err);
+    res.status(500).json({ error: 'No se pudo leer el catálogo.' });
   }
 });
 
-app.get('/api/prendas/:id', (req, res) => {
+app.get('/api/prendas/:id', async (req, res) => {
+  if (!requireDatabase(res)) return;
   try {
-    const item = readItems().find(i => i.id === req.params.id);
-    if (!item) return res.status(404).json({ error: 'Prenda no encontrada' });
-    res.json(item);
+    const { data, error } = await supabase
+      .from('prendas')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Prenda no encontrada' });
+    res.json(normalizeItem(data));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error leyendo prenda:', err);
+    res.status(500).json({ error: 'No se pudo leer la prenda.' });
   }
 });
 
-app.post('/api/prendas', requireAdmin, (req, res) => {
+app.post('/api/prendas', requireAdmin, async (req, res) => {
+  if (!requireDatabase(res)) return;
   try {
     const { nombre, precio, categoria, talle, condicion, descripcion, imagen } = req.body || {};
 
@@ -122,30 +135,26 @@ app.post('/api/prendas', requireAdmin, (req, res) => {
       descripcion: descripcion ? String(descripcion).trim() : '',
       imagen,
       estado: 'Disponible',
-      createdAt: Date.now()
+      created_at: Date.now()
     };
 
-    const items = readItems();
-    items.push(item);
-    writeItems(items);
+    const { data, error } = await supabase
+      .from('prendas')
+      .insert(item)
+      .select()
+      .single();
+    if (error) throw error;
 
-    res.status(201).json(item);
+    res.status(201).json(normalizeItem(data));
   } catch (err) {
     console.error('Error creando prenda:', err);
     res.status(500).json({ error: 'No se pudo guardar la publicación.' });
   }
 });
 
-app.patch('/api/prendas/:id', requireAdmin, (req, res) => {
+app.patch('/api/prendas/:id', requireAdmin, async (req, res) => {
+  if (!requireDatabase(res)) return;
   try {
-    const items = readItems();
-    const index = items.findIndex(item => item.id === req.params.id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Prenda no encontrada' });
-    }
-
-    const current = items[index];
     const { nombre, precio, categoria, talle, condicion, descripcion, imagen, estado } = req.body || {};
     const allowedStates = ['Disponible', 'Reservada', 'Vendida', 'Oculta'];
 
@@ -159,8 +168,7 @@ app.patch('/api/prendas/:id', requireAdmin, (req, res) => {
       return res.status(400).json({ error: 'El estado no es válido.' });
     }
 
-    items[index] = {
-      ...current,
+    const updates = {
       ...(nombre !== undefined && { nombre: String(nombre).trim() }),
       ...(precio !== undefined && { precio: Number(precio) }),
       ...(categoria !== undefined && { categoria: String(categoria).trim() }),
@@ -170,27 +178,33 @@ app.patch('/api/prendas/:id', requireAdmin, (req, res) => {
       ...(imagen !== undefined && { imagen }),
       ...(estado !== undefined && { estado: String(estado) })
     };
-
-    writeItems(items);
-    res.json(items[index]);
+    const { data, error } = await supabase
+      .from('prendas')
+      .update(updates)
+      .eq('id', req.params.id)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Prenda no encontrada' });
+    res.json(normalizeItem(data));
   } catch (err) {
     console.error('Error actualizando prenda:', err);
     res.status(500).json({ error: 'No se pudo actualizar la publicación.' });
   }
 });
 
-app.delete('/api/prendas/:id', requireAdmin, (req, res) => {
+app.delete('/api/prendas/:id', requireAdmin, async (req, res) => {
+  if (!requireDatabase(res)) return;
   try {
-    const items = readItems();
-    const index = items.findIndex(i => i.id === req.params.id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Prenda no encontrada' });
-    }
-
-    const [deleted] = items.splice(index, 1);
-    writeItems(items);
-    res.json({ ok: true, deleted });
+    const { data, error } = await supabase
+      .from('prendas')
+      .delete()
+      .eq('id', req.params.id)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Prenda no encontrada' });
+    res.json({ ok: true, deleted: normalizeItem(data) });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo eliminar la prenda.' });
   }
@@ -200,8 +214,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'catalogo.html'));
 });
 
-ensureDataFile();
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Reviste API escuchando en el puerto ${PORT}`);
-  console.log(`Archivo de datos: ${DATA_FILE}`);
+  console.log(`Supabase configurado: ${Boolean(supabase)}`);
 });
