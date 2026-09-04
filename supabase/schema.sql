@@ -12,7 +12,6 @@ create table if not exists public.prendas (
 );
 
 alter table public.prendas enable row level security;
-alter table public.prendas drop column if exists owner_id;
 
 create table if not exists public.usuarios (
   id uuid primary key default gen_random_uuid(),
