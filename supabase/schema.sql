@@ -21,6 +21,8 @@ create table if not exists public.usuarios (
 );
 
 alter table public.usuarios enable row level security;
+alter table public.usuarios add column if not exists password text;
+alter table public.usuarios drop constraint if exists usuarios_id_fkey;
 
 drop policy if exists "Users can read own profile" on public.usuarios;
 drop policy if exists "Public can check credentials" on public.usuarios;
