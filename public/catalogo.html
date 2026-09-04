@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reviste — catálogo</title>
+<title>FerYoShop — catálogo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -153,7 +153,7 @@
 
 <header>
   <div class="navbar">
-    <div class="brand"><span class="brand-mark"></span>Reviste</div>
+    <div class="brand"><span class="brand-mark"></span>FerYoShop</div>
   </div>
 </header>
 
@@ -185,19 +185,19 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 004.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.13c-.24.68-1.4 1.33-1.93 1.4-.5.07-1.11.1-1.79-.11a16.4 16.4 0 01-1.63-.6c-2.87-1.24-4.75-4.13-4.9-4.32-.14-.2-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.26-.29.57-.36.76-.36h.55c.18 0 .42-.07.65.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.15.32-.3.5-.14.17-.3.38-.43.51-.14.14-.29.3-.13.58.17.29.75 1.24 1.61 2 1.1.98 2.03 1.29 2.32 1.43.29.14.46.12.63-.07.17-.2.72-.84.91-1.13.19-.29.38-.24.63-.14.26.1 1.63.77 1.91.91.29.14.48.21.55.33.07.12.07.68-.16 1.34z"/></svg>
     Pedidos por WhatsApp
   </a>
-  <span class="copy">Reviste — moda de segunda mano</span>
+  <span class="copy">FerYoShop — moda de segunda mano</span>
 </footer>
 
 <script>
 // ⚠️ Reemplazá este número por el WhatsApp real de la tienda (código de país + número, sin + ni espacios)
 const WHATSAPP_NUMBER = '5493534000000';
 
-const API_URL = (window.REVISTE_API_URL || 'https://feryoshop.onrender.com').replace(/\/$/, '');
+const API_URL = (window.FerYoShop_API_URL || 'https://feryoshop.onrender.com').replace(/\/$/, '');
 let items = [];
 let activeCategory = 'Todas';
 const CATEGORIES = ['Todas','Remeras','Camisas','Buzos y camperas','Pantalones','Vestidos y polleras','Calzado','Accesorios'];
 
-document.getElementById('footer-wa-link').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Quería consultar por el catálogo de Reviste 🙂')}`;
+document.getElementById('footer-wa-link').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Quería consultar por el catálogo de FerYoShop 🙂')}`;
 
 async function loadItems(){
   try{
@@ -231,7 +231,7 @@ function escapeHtml(str){
 
 function waLinkFor(item){
   const precio = Number(item.precio).toLocaleString('es-AR');
-  const msg = `Hola! Te escribo por "${item.nombre}" (talle ${item.talle}, $${precio}) que vi en el catálogo de Reviste. ¿Sigue disponible?`;
+  const msg = `Hola! Te escribo por "${item.nombre}" (talle ${item.talle}, $${precio}) que vi en el catálogo de FerYoShop. ¿Sigue disponible?`;
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
 
