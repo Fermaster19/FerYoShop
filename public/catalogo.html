@@ -124,7 +124,10 @@
   .card-price{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:19px; color:var(--violet-2); }
   .card-meta{ display:flex; gap:7px; flex-wrap:wrap; }
   .tag{ font-size:11px; padding:4px 10px; border-radius:7px; background:rgba(255,255,255,0.05); color:var(--text-dim); border:1px solid var(--border); }
-  .card-desc{ font-size:13px; color:var(--text-dim); line-height:1.5; }
+  .desc-toggle{ align-self:flex-start; border:0; padding:0; background:transparent; color:var(--blue-2); cursor:pointer; font-size:12px; font-weight:600; }
+  .desc-toggle:hover{ color:var(--violet-2); text-decoration:underline; }
+  .card-desc{ display:none; font-size:13px; color:var(--text-dim); line-height:1.5; }
+  .card-desc.open{ display:block; }
   .wa-btn{
     margin-top:auto; display:flex; align-items:center; justify-content:center; gap:8px;
     text-decoration:none; font-weight:700; font-size:13.5px; color:#08061a;
@@ -291,6 +294,7 @@
 // ⚠️ Reemplazá este número por el WhatsApp real de la tienda (código de país + número, sin + ni espacios)
 const WHATSAPP_NUMBER = '3573402904';
 const INSTAGRAM_USERNAME = 'feryo_ropa';
+const CATALOG_CACHE_KEY = 'feryo-catalog-cache';
 
 let items = [];
 let activeCategory = 'Todas';
@@ -305,15 +309,24 @@ async function loadItems(){
   try{
     const { data, error } = await window.supabaseClient
       .from('prendas')
-      .select('*')
+      .select('id,nombre,precio,categoria,talle,descripcion,imagen,estado,created_at')
       .neq('estado', 'Oculta')
       .order('created_at', { ascending: false });
     if(error) throw error;
     items = data.map(item=>({ ...item, createdAt: Number(item.created_at) }));
     items.sort((a,b)=> b.createdAt - a.createdAt);
+    localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(items));
   }catch(e){
     console.error(e);
-    items = [];
+  }
+}
+
+function loadCachedItems(){
+  try{
+    const cached = JSON.parse(localStorage.getItem(CATALOG_CACHE_KEY) || '[]');
+    return Array.isArray(cached) ? cached : [];
+  }catch(e){
+    return [];
   }
 }
 
@@ -428,8 +441,8 @@ function closeCart(){
 function sendCartToWhatsApp(){
   if(!cart.length) return;
   const lines = cart.map(item=>`- ${item.quantity}x ${item.nombre} | Talle: ${item.talle} | $${(Number(item.precio) * item.quantity).toLocaleString('es-AR')}`);
-  const total = cart.reduce((sum, item)=>sum + Number(item.precio) * item.quantity, 0);
-  const message = `Hola! Quiero hacer este pedido en FerYo:\n\n${lines.join('\n')}\n\nTotal estimado: $${total.toLocaleString('es-AR')}`;
+  const subtotal = cart.reduce((sum, item)=>sum + Number(item.precio) * item.quantity, 0);
+  const message = `Hola! Quiero hacer este pedido en FerYo:\n\n${lines.join('\n')}\n\nSubtotal productos: $${subtotal.toLocaleString('es-AR')}\nEnvío: se calcula aparte\nTotal estimado: $${subtotal.toLocaleString('es-AR')} + envío`;
   window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
 }
 
@@ -465,7 +478,7 @@ function renderGrid(){
           <span class="tag">${escapeHtml(item.categoria)}</span>
           <span class="tag">Talle ${escapeHtml(item.talle)}</span>
         </div>
-        ${item.descripcion ? `<div class="card-desc">${escapeHtml(item.descripcion)}</div>` : ''}
+        ${item.descripcion ? `<button class="desc-toggle" type="button" data-description="${escapeHtml(item.id)}" aria-expanded="false">Ver descripción</button><div class="card-desc" data-description-content="${escapeHtml(item.id)}">${escapeHtml(item.descripcion)}</div>` : ''}
         <button class="wa-btn cart-add-btn" type="button" data-add-cart="${escapeHtml(item.id)}">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
           Agregar al carrito
@@ -484,6 +497,14 @@ function renderGrid(){
   grid.querySelectorAll('[data-add-cart]').forEach(button=>{
     button.addEventListener('click', ()=>addToCart(button.dataset.addCart));
   });
+  grid.querySelectorAll('[data-description]').forEach(button=>{
+    button.addEventListener('click', ()=>{
+      const description = grid.querySelector(`[data-description-content="${CSS.escape(button.dataset.description)}"]`);
+      const isOpen = description.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(isOpen));
+      button.textContent = isOpen ? 'Ocultar descripción' : 'Ver descripción';
+    });
+  });
 }
 
 document.getElementById('cart-toggle').addEventListener('click', openCart);
@@ -495,8 +516,10 @@ document.getElementById('cart-send').addEventListener('click', sendCartToWhatsAp
 renderCart();
 
 async function init(){
-  await loadItems();
   renderFilters();
+  items = loadCachedItems();
+  renderGrid();
+  await loadItems();
   renderGrid();
 }
 init();
