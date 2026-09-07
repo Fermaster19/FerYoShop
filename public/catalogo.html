@@ -132,6 +132,40 @@
     padding:12px; border-radius:12px; transition:transform .15s ease, filter .15s ease;
   }
   .wa-btn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+  .cart-add-btn{ border:1px solid rgba(127,177,255,.45); background:rgba(127,177,255,.1); color:var(--blue-2); cursor:pointer; }
+  .cart-add-btn:hover{ background:rgba(127,177,255,.2); border-color:var(--blue-2); }
+  .cart-toggle{
+    position:fixed; right:24px; bottom:24px; z-index:60; width:58px; height:58px; border:0; border-radius:50%;
+    display:grid; place-items:center; color:#08061a; background:linear-gradient(135deg, var(--blue-2), var(--violet-2));
+    cursor:pointer; box-shadow:0 12px 30px rgba(0,0,0,.35); transition:transform .15s ease, filter .15s ease;
+  }
+  .cart-toggle:hover{ transform:translateY(-2px); filter:brightness(1.06); }
+  .cart-count{ position:absolute; top:-4px; right:-4px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; display:grid; place-items:center; background:#ff7a7a; color:#180811; font-size:11px; font-weight:800; }
+  .cart-drawer{ position:fixed; inset:0; z-index:70; pointer-events:none; }
+  .cart-drawer::before{ content:''; position:absolute; inset:0; background:rgba(5,3,16,.62); opacity:0; transition:opacity .2s ease; }
+  .cart-panel{ position:absolute; top:0; right:0; height:100%; width:min(420px, 100%); padding:28px; display:flex; flex-direction:column; gap:20px; background:#0c0a20; border-left:1px solid var(--border); transform:translateX(100%); transition:transform .25s ease; }
+  .cart-drawer.open{ pointer-events:auto; }
+  .cart-drawer.open::before{ opacity:1; }
+  .cart-drawer.open .cart-panel{ transform:none; }
+  .cart-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .cart-head h2{ font-size:26px; }
+  .cart-close{ border:1px solid var(--border); background:transparent; color:var(--text); width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:20px; }
+  .cart-close:hover{ border-color:var(--violet-2); }
+  .cart-items{ display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; }
+  .cart-item{ display:grid; grid-template-columns:58px 1fr auto; gap:12px; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--border); }
+  .cart-item img{ width:58px; height:70px; border-radius:9px; object-fit:cover; background:#0f0c22; }
+  .cart-item-name{ font-size:13px; font-weight:600; line-height:1.35; }
+  .cart-item-meta{ color:var(--text-dim); font-size:11px; margin-top:5px; }
+  .cart-item-price{ color:var(--violet-2); font-size:13px; font-weight:700; margin-top:5px; }
+  .cart-remove{ border:0; background:transparent; color:var(--text-dim); cursor:pointer; font-size:18px; padding:6px; }
+  .cart-remove:hover{ color:#ff7a7a; }
+  .cart-empty{ color:var(--text-dim); font-size:14px; text-align:center; padding:42px 14px; border:1px dashed var(--border); border-radius:14px; }
+  .cart-summary{ border-top:1px solid var(--border); padding-top:16px; }
+  .cart-total{ display:flex; justify-content:space-between; gap:12px; font-weight:700; margin-bottom:14px; }
+  .cart-total strong{ color:var(--violet-2); }
+  .cart-send{ width:100%; border:0; cursor:pointer; border-radius:12px; padding:13px 16px; display:flex; align-items:center; justify-content:center; gap:8px; color:#08061a; background:var(--whatsapp); font-weight:800; }
+  .cart-send:disabled{ opacity:.45; cursor:not-allowed; }
+  @media (max-width:520px){ .cart-toggle{ right:16px; bottom:16px; } .cart-panel{ padding:22px 18px; } }
   .social-links{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
   .footer-instagram{ display:flex; align-items:center; gap:8px; color:var(--text-dim); font-size:13.5px; text-decoration:none; }
   .footer-instagram:hover{ color:var(--text); }
@@ -215,6 +249,28 @@
   </div>
 </main>
 
+<button class="cart-toggle" id="cart-toggle" type="button" aria-label="Abrir carrito" aria-expanded="false">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
+  <span class="cart-count" id="cart-count">0</span>
+</button>
+
+<aside class="cart-drawer" id="cart-drawer" aria-label="Carrito de compras" aria-hidden="true">
+  <div class="cart-panel">
+    <div class="cart-head">
+      <h2>Tu carrito</h2>
+      <button class="cart-close" id="cart-close" type="button" aria-label="Cerrar carrito">&times;</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-summary">
+      <div class="cart-total"><span>Total estimado</span><strong id="cart-total">$0</strong></div>
+      <button class="cart-send" id="cart-send" type="button" disabled>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 004.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2z"/></svg>
+        Enviar pedido por WhatsApp
+      </button>
+    </div>
+  </div>
+</aside>
+
 <footer>
   <div class="social-links">
   <a class="footer-wa" href="#" id="footer-wa-link" target="_blank" rel="noopener">
@@ -238,6 +294,7 @@ const INSTAGRAM_USERNAME = 'feryo_ropa';
 
 let items = [];
 let activeCategory = 'Todas';
+let cart = loadCart();
 const CATEGORIES = ['Todas','Remeras','Remerones','Buzos','Pantalones','Camperas'];
 
 document.getElementById('footer-wa-link').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Quería consultar por el catálogo de FerYo 🙂')}`;
@@ -294,6 +351,88 @@ function waLinkFor(item){
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
 
+function loadCart(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('feryo-cart') || '[]');
+    return Array.isArray(saved) ? saved : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function saveCart(){
+  localStorage.setItem('feryo-cart', JSON.stringify(cart));
+}
+
+function addToCart(id){
+  const item = items.find(product=>String(product.id)===String(id));
+  if(!item) return;
+  const existing = cart.find(product=>String(product.id)===String(item.id));
+  if(existing){ existing.quantity += 1; }
+  else{ cart.push({ ...item, quantity:1 }); }
+  saveCart();
+  renderCart();
+  openCart();
+}
+
+function removeFromCart(id){
+  cart = cart.filter(item=>String(item.id)!==String(id));
+  saveCart();
+  renderCart();
+}
+
+function renderCart(){
+  const cartItems = document.getElementById('cart-items');
+  const cartCount = document.getElementById('cart-count');
+  const cartTotal = document.getElementById('cart-total');
+  const cartSend = document.getElementById('cart-send');
+  const count = cart.reduce((total, item)=>total + item.quantity, 0);
+  const total = cart.reduce((sum, item)=>sum + Number(item.precio) * item.quantity, 0);
+  cartCount.textContent = count;
+  cartTotal.textContent = `$${total.toLocaleString('es-AR')}`;
+  cartSend.disabled = cart.length===0;
+
+  if(!cart.length){
+    cartItems.innerHTML = '<div class="cart-empty">Todavía no agregaste productos.</div>';
+    return;
+  }
+  cartItems.innerHTML = cart.map(item=>`
+    <div class="cart-item">
+      <img src="${item.imagen || ''}" alt="${escapeHtml(item.nombre)}">
+      <div>
+        <div class="cart-item-name">${escapeHtml(item.nombre)}</div>
+        <div class="cart-item-meta">Talle ${escapeHtml(item.talle)} · Cantidad: ${item.quantity}</div>
+        <div class="cart-item-price">$${(Number(item.precio) * item.quantity).toLocaleString('es-AR')}</div>
+      </div>
+      <button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Quitar ${escapeHtml(item.nombre)}">&times;</button>
+    </div>`).join('');
+  cartItems.querySelectorAll('[data-remove-cart]').forEach(button=>{
+    button.addEventListener('click', ()=>removeFromCart(button.dataset.removeCart));
+  });
+}
+
+function openCart(){
+  const drawer = document.getElementById('cart-drawer');
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  document.getElementById('cart-toggle').setAttribute('aria-expanded', 'true');
+}
+
+function closeCart(){
+  const drawer = document.getElementById('cart-drawer');
+  drawer.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+  document.getElementById('cart-toggle').setAttribute('aria-expanded', 'false');
+}
+
+function sendCartToWhatsApp(){
+  if(!cart.length) return;
+  const lines = cart.map(item=>`- ${item.quantity}x ${item.nombre} | Talle: ${item.talle} | $${(Number(item.precio) * item.quantity).toLocaleString('es-AR')}`);
+  const total = cart.reduce((sum, item)=>sum + Number(item.precio) * item.quantity, 0);
+  const message = `Hola! Quiero hacer este pedido en FerYo:\n\n${lines.join('\n')}\n\nTotal estimado: $${total.toLocaleString('es-AR')}`;
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+}
+
 function renderGrid(){
   const grid = document.getElementById('grid');
   const empty = document.getElementById('empty-state');
@@ -327,6 +466,10 @@ function renderGrid(){
           <span class="tag">Talle ${escapeHtml(item.talle)}</span>
         </div>
         ${item.descripcion ? `<div class="card-desc">${escapeHtml(item.descripcion)}</div>` : ''}
+        <button class="wa-btn cart-add-btn" type="button" data-add-cart="${escapeHtml(item.id)}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
+          Agregar al carrito
+        </button>
         <a class="wa-btn" href="${waLinkFor(item)}" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 004.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.13c-.24.68-1.4 1.33-1.93 1.4-.5.07-1.11.1-1.79-.11a16.4 16.4 0 01-1.63-.6c-2.87-1.24-4.75-4.13-4.9-4.32-.14-.2-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.26-.29.57-.36.76-.36h.55c.18 0 .42-.07.65.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.15.32-.3.5-.14.17-.3.38-.43.51-.14.14-.29.3-.13.58.17.29.75 1.24 1.61 2 1.1.98 2.03 1.29 2.32 1.43.29.14.46.12.63-.07.17-.2.72-.84.91-1.13.19-.29.38-.24.63-.14.26.1 1.63.77 1.91.91.29.14.48.21.55.33.07.12.07.68-.16 1.34z"/></svg>
           Consultar por WhatsApp
@@ -338,7 +481,18 @@ function renderGrid(){
       </div>`;
     grid.appendChild(card);
   });
+  grid.querySelectorAll('[data-add-cart]').forEach(button=>{
+    button.addEventListener('click', ()=>addToCart(button.dataset.addCart));
+  });
 }
+
+document.getElementById('cart-toggle').addEventListener('click', openCart);
+document.getElementById('cart-close').addEventListener('click', closeCart);
+document.getElementById('cart-drawer').addEventListener('click', event=>{
+  if(event.target.id==='cart-drawer') closeCart();
+});
+document.getElementById('cart-send').addEventListener('click', sendCartToWhatsApp);
+renderCart();
 
 async function init(){
   await loadItems();
