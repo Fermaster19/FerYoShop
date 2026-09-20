@@ -6,12 +6,15 @@ create table if not exists public.prendas (
   precio numeric not null check (precio >= 0),
   categoria text not null,
   talle text not null,
+  colores text not null default '',
   condicion text not null default 'Nuevo',
   descripcion text not null default '',
   imagen text not null,
   estado text not null default 'Disponible' check (estado in ('Disponible', 'Reservada', 'Vendida', 'Oculta')),
   created_at bigint not null
 );
+
+alter table public.prendas add column if not exists colores text not null default '';
 
 alter table public.prendas enable row level security;
 

@@ -148,6 +148,7 @@
   .manage-fields label{ margin-bottom:5px; font-size:11px; }
   .manage-fields input, .manage-fields select{ padding:10px 11px; font-size:13px; }
   .manage-description{ grid-column:1 / -1; }
+  .manage-colors{ grid-column:1 / -1; }
   .manage-actions{ display:flex; flex-direction:column; gap:8px; }
   .action-btn{ border:1px solid var(--border); background:var(--glass-strong); color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; white-space:nowrap; }
   .action-btn:hover{ border-color:var(--violet-2); }
@@ -250,6 +251,11 @@
       <div>
         <label for="f-desc">Descripción</label>
         <textarea id="f-desc" placeholder="Contá el estado, la marca, la tela o cualquier detalle que ayude a decidir la compra."></textarea>
+      </div>
+
+      <div>
+        <label for="f-colores">Colores disponibles</label>
+        <input type="text" id="f-colores" placeholder="Ej: Negro, Blanco, Bordó">
       </div>
 
       <div class="form-error" id="form-error"></div>
@@ -417,6 +423,7 @@ function renderManageList(items){
         <div><label>Estado</label><select data-field="estado">
           ${['Disponible','Reservada','Vendida','Oculta'].map(option=>`<option ${option===estado ? 'selected' : ''}>${option}</option>`).join('')}
         </select></div>
+        <div class="manage-colors"><label>Colores</label><input data-field="colores" type="text" value="${escapeHtml(item.colores || '')}" placeholder="Ej: Negro, Blanco"></div>
         <div class="manage-description"><label>Descripción</label><input data-field="descripcion" type="text" value="${escapeHtml(item.descripcion || '')}"></div>
       </div>
       <div class="manage-actions">
@@ -485,6 +492,7 @@ async function handleSubmit(e){
   const talle = document.getElementById('f-talle').value;
   const condicion = 'Nuevo';
   const descripcion = document.getElementById('f-desc').value.trim();
+  const colores = document.getElementById('f-colores').value.trim();
 
   if(!nombre || !precio || !categoria || !talle){
     errorEl.textContent = 'Completá todos los campos obligatorios.';
@@ -496,7 +504,7 @@ async function handleSubmit(e){
   btn.textContent = 'Publicando...';
 
   const item = {
-    nombre, precio: Number(precio), categoria, talle, condicion, descripcion,
+    nombre, precio: Number(precio), categoria, talle, condicion, descripcion, colores,
     imagen: pendingImage
   };
 
