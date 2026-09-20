@@ -130,13 +130,18 @@
   .card-desc.open{ display:block; }
   .card-link{ display:block; color:inherit; text-decoration:none; cursor:pointer; border:0; padding:0; width:100%; background:transparent; }
   .color-list{ display:flex; gap:6px; flex-wrap:wrap; }
-  .color-chip{ border:1px solid rgba(127,177,255,.35); background:rgba(127,177,255,.08); color:var(--blue-2); padding:5px 9px; border-radius:999px; font-size:11px; cursor:pointer; }
+  .color-chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(127,177,255,.35); background:rgba(127,177,255,.08); color:var(--blue-2); padding:5px 9px; border-radius:999px; font-size:11px; cursor:pointer; }
   .color-chip:hover, .color-chip.selected{ border-color:var(--violet-2); color:#fff; background:rgba(145,99,255,.25); }
+  .color-swatch{ width:15px; height:15px; border-radius:50%; border:1px solid rgba(255,255,255,.5); flex-shrink:0; }
   .detail-modal{ position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:20px; background:rgba(5,3,16,.76); opacity:0; pointer-events:none; transition:opacity .2s ease; }
   .detail-modal.open{ opacity:1; pointer-events:auto; }
   .detail-panel{ width:min(760px, 100%); max-height:90vh; overflow:auto; display:grid; grid-template-columns:minmax(220px, .8fr) 1fr; gap:26px; padding:24px; background:#0c0a20; border:1px solid var(--border); border-radius:22px; transform:translateY(12px); transition:transform .2s ease; }
   .detail-modal.open .detail-panel{ transform:none; }
-  .detail-image{ width:100%; aspect-ratio:4/5; object-fit:cover; border-radius:14px; background:#0f0c22; }
+  .detail-gallery{ min-width:0; }
+  .detail-image{ width:100%; aspect-ratio:4/5; object-fit:cover; border-radius:14px; background:#0f0c22; display:block; }
+  .detail-thumbs{ display:flex; gap:8px; overflow:auto; margin-top:10px; }
+  .detail-thumb{ width:58px; height:70px; flex:0 0 auto; object-fit:cover; border:1px solid var(--border); border-radius:8px; cursor:pointer; opacity:.65; }
+  .detail-thumb.active, .detail-thumb:hover{ opacity:1; border-color:var(--violet-2); }
   .detail-copy{ display:flex; flex-direction:column; gap:14px; }
   .detail-head{ display:flex; justify-content:space-between; gap:12px; align-items:start; }
   .detail-title{ font-size:28px; line-height:1.1; }
@@ -293,7 +298,7 @@
 
 <div class="detail-modal" id="detail-modal" aria-hidden="true">
   <article class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-title">
-    <img class="detail-image" id="detail-image" alt="">
+    <div class="detail-gallery"><img class="detail-image" id="detail-image" alt=""><div class="detail-thumbs" id="detail-thumbs"></div></div>
     <div class="detail-copy">
       <div class="detail-head"><h2 class="detail-title" id="detail-title"></h2><button class="detail-close" id="detail-close" type="button" aria-label="Cerrar detalles">&times;</button></div>
       <div class="detail-price" id="detail-price"></div>
@@ -341,7 +346,7 @@ async function loadItems(){
   try{
     const { data, error } = await window.supabaseClient
       .from('prendas')
-      .select('id,nombre,precio,categoria,talle,colores,descripcion,imagen,estado,created_at')
+      .select('id,nombre,precio,categoria,talle,colores,imagen,imagenes,descripcion,estado,created_at')
       .neq('estado', 'Oculta')
       .order('created_at', { ascending: false });
     if(error) throw error;
@@ -391,7 +396,19 @@ function escapeHtml(str){
 }
 
 function getColors(item){
-  return String(item.colores || '').split(',').map(color=>color.trim()).filter(Boolean);
+  try{
+    const parsed = JSON.parse(item.colores || '[]');
+    if(Array.isArray(parsed)) return parsed.filter(color=>color && color.name).map(color=>({ name:String(color.name), value:/^#[0-9a-f]{6}$/i.test(color.value) ? color.value : '#777777' }));
+  }catch(e){ /* Compatibilidad con colores guardados como texto. */ }
+  return String(item.colores || '').split(',').map(name=>name.trim()).filter(Boolean).map(name=>({ name, value:'#777777' }));
+}
+
+function getImages(item){
+  try{
+    const parsed = JSON.parse(item.imagenes || '[]');
+    if(Array.isArray(parsed) && parsed.length) return parsed.filter(Boolean);
+  }catch(e){ /* Compatibilidad con publicaciones anteriores. */ }
+  return item.imagen ? [item.imagen] : [];
 }
 
 function waLinkFor(item, selectedColor=''){
@@ -515,7 +532,7 @@ function renderGrid(){
           <span class="tag">${escapeHtml(item.categoria)}</span>
           <span class="tag">Talle ${escapeHtml(item.talle)}</span>
         </div>
-        ${getColors(item).length ? `<div class="color-list">${getColors(item).map(color=>`<button class="color-chip" type="button" data-color="${escapeHtml(color)}" data-detail-id="${escapeHtml(item.id)}">${escapeHtml(color)}</button>`).join('')}</div>` : ''}
+        ${getColors(item).length ? `<div class="color-list">${getColors(item).map(color=>`<button class="color-chip" type="button" data-color="${escapeHtml(color.name)}" data-detail-id="${escapeHtml(item.id)}"><span class="color-swatch" style="background:${color.value}"></span>${escapeHtml(color.name)}</button>`).join('')}</div>` : ''}
         ${item.descripcion ? `<button class="desc-toggle" type="button" data-description="${escapeHtml(item.id)}" aria-expanded="false">Ver descripción</button><div class="card-desc" data-description-content="${escapeHtml(item.id)}">${escapeHtml(item.descripcion)}</div>` : ''}
         <button class="wa-btn cart-add-btn" type="button" data-add-cart="${escapeHtml(item.id)}">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8h12l1 13H5L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
@@ -551,15 +568,22 @@ function renderGrid(){
 function openDetail(id, selectedColor=''){
   const item = typeof id === 'object' ? id : items.find(product=>String(product.id)===String(id));
   if(!item) return;
-  const color = selectedColor || getColors(item)[0] || '';
-  document.getElementById('detail-image').src = item.imagen || '';
+  const color = selectedColor || getColors(item)[0]?.name || '';
+  const images = getImages(item);
+  document.getElementById('detail-image').src = images[0] || '';
   document.getElementById('detail-image').alt = item.nombre;
+  document.getElementById('detail-thumbs').innerHTML = images.map((image, index)=>`<img class="detail-thumb${index===0 ? ' active' : ''}" src="${image}" alt="Vista ${index + 1} de ${escapeHtml(item.nombre)}" data-detail-image="${index}">`).join('');
+  document.querySelectorAll('[data-detail-image]').forEach(button=>button.addEventListener('click', ()=>{
+    document.getElementById('detail-image').src = images[Number(button.dataset.detailImage)];
+    document.querySelectorAll('[data-detail-image]').forEach(thumb=>thumb.classList.remove('active'));
+    button.classList.add('active');
+  }));
   document.getElementById('detail-title').textContent = item.nombre;
   document.getElementById('detail-price').textContent = `$${Number(item.precio).toLocaleString('es-AR')}`;
   document.getElementById('detail-meta').innerHTML = `<span class="tag">${escapeHtml(item.categoria)}</span><span class="tag">Talle ${escapeHtml(item.talle)}</span><span class="tag">${escapeHtml(item.estado || 'Disponible')}</span>`;
   const colors = getColors(item);
   document.getElementById('detail-colors-wrap').style.display = colors.length ? 'block' : 'none';
-  document.getElementById('detail-colors').innerHTML = colors.map(itemColor=>`<button class="color-chip${itemColor===color ? ' selected' : ''}" type="button" data-detail-color="${escapeHtml(itemColor)}">${escapeHtml(itemColor)}</button>`).join('');
+  document.getElementById('detail-colors').innerHTML = colors.map(itemColor=>`<button class="color-chip${itemColor.name===color ? ' selected' : ''}" type="button" data-detail-color="${escapeHtml(itemColor.name)}"><span class="color-swatch" style="background:${itemColor.value}"></span>${escapeHtml(itemColor.name)}</button>`).join('');
   document.getElementById('detail-description').textContent = item.descripcion || 'Sin descripción adicional.';
   document.getElementById('detail-wa').href = waLinkFor(item, color);
   document.getElementById('detail-cart').onclick = ()=>addToCart(item.id);
@@ -572,7 +596,7 @@ function openDetail(id, selectedColor=''){
 }
 
 function selectColor(item, color){
-  const sameGarment = items.find(candidate=>candidate.id!==item.id && candidate.nombre.trim().toLowerCase()===item.nombre.trim().toLowerCase() && getColors(candidate).some(itemColor=>itemColor.toLowerCase()===color.toLowerCase()));
+  const sameGarment = items.find(candidate=>candidate.id!==item.id && candidate.nombre.trim().toLowerCase()===item.nombre.trim().toLowerCase() && getColors(candidate).some(itemColor=>itemColor.name.toLowerCase()===color.toLowerCase()));
   openDetail(sameGarment || item, color);
 }
 

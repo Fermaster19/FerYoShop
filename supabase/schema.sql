@@ -7,6 +7,7 @@ create table if not exists public.prendas (
   categoria text not null,
   talle text not null,
   colores text not null default '',
+  imagenes text not null default '[]',
   condicion text not null default 'Nuevo',
   descripcion text not null default '',
   imagen text not null,
@@ -15,6 +16,7 @@ create table if not exists public.prendas (
 );
 
 alter table public.prendas add column if not exists colores text not null default '';
+alter table public.prendas add column if not exists imagenes text not null default '[]';
 
 alter table public.prendas enable row level security;
 

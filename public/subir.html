@@ -77,6 +77,8 @@
   }
   .dropzone.drag{ border-color:var(--violet); background:rgba(145,99,255,0.08); }
   .dropzone img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .dz-gallery{ position:absolute; inset:0; display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; padding:5px; background:#0f0c22; overflow:auto; }
+  .dz-gallery img{ position:relative; inset:auto; width:100%; height:120px; min-height:0; object-fit:cover; border-radius:8px; }
   .dropzone .dz-label{ color:var(--text-dim); font-size:13px; z-index:1; }
   .dropzone .dz-label b{ color:var(--text); display:block; margin-bottom:4px; font-size:14.5px; font-family:'Bricolage Grotesque'; font-weight:700; }
   .dropzone input{ display:none; }
@@ -89,6 +91,14 @@
   }
   .dropzone.has-image .dz-remove{ display:flex; }
   .dropzone.has-image .dz-label, .dropzone.has-image .dz-icon{ display:none; }
+  .color-builder{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .color-picker{ width:52px; height:44px; padding:4px; border:1px solid rgba(127,177,255,.5); border-radius:13px; background:#19305f; cursor:pointer; }
+  .color-name{ flex:1; min-width:180px; }
+  .add-color-btn{ border:1px solid rgba(127,177,255,.45); background:rgba(127,177,255,.1); color:var(--blue-2); padding:11px 14px; border-radius:12px; cursor:pointer; font-weight:700; }
+  .selected-colors{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .selected-color{ display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border); background:var(--glass-strong); color:var(--text); padding:6px 9px; border-radius:999px; font-size:12px; }
+  .color-swatch{ width:16px; height:16px; border-radius:50%; border:1px solid rgba(255,255,255,.45); flex-shrink:0; }
+  .remove-color{ border:0; background:transparent; color:var(--text-dim); cursor:pointer; padding:0 2px; font-size:15px; }
   .dz-hint{ color:var(--text-dim); font-size:12.5px; text-align:center; }
 
   form.upload-form{ display:flex; flex-direction:column; gap:20px; }
@@ -210,10 +220,10 @@
     <div class="dz-wrap">
       <div class="dropzone" id="dropzone" onclick="if(event.target.id!=='dz-remove')document.getElementById('foto-input').click()">
         <button type="button" class="dz-remove" id="dz-remove" onclick="event.stopPropagation(); removeImage();">✕</button>
-        <img id="dz-preview" style="display:none;">
+        <div class="dz-gallery" id="dz-gallery" hidden></div>
         <svg class="dz-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
         <div class="dz-label"><b>Subí una foto</b>Arrastrá una imagen o hacé clic para elegirla</div>
-        <input type="file" id="foto-input" accept="image/*">
+        <input type="file" id="foto-input" accept="image/*" multiple>
       </div>
       <div class="dz-hint">Formatos JPG o PNG · se optimiza automáticamente</div>
     </div>
@@ -254,8 +264,13 @@
       </div>
 
       <div>
-        <label for="f-colores">Colores disponibles</label>
-        <input type="text" id="f-colores" placeholder="Ej: Negro, Blanco, Bordó">
+        <label for="f-color-picker">Colores disponibles</label>
+        <div class="color-builder">
+          <input class="color-picker" type="color" id="f-color-picker" value="#111111" aria-label="Elegir color">
+          <input class="color-name" type="text" id="f-color-name" placeholder="Nombre del color, por ejemplo Negro">
+          <button class="add-color-btn" type="button" id="add-color-btn">Agregar color</button>
+        </div>
+        <div class="selected-colors" id="selected-colors" aria-live="polite"></div>
       </div>
 
       <div class="form-error" id="form-error"></div>
@@ -280,30 +295,32 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/supabase-client.js"></script>
 <script>
-let pendingImage = null;
+let pendingImages = [];
+let selectedColors = [];
 let adminAuthenticated = false;
 
 const dropzone = document.getElementById('dropzone');
 const fotoInput = document.getElementById('foto-input');
-const dzPreview = document.getElementById('dz-preview');
+const dzGallery = document.getElementById('dz-gallery');
 const manageList = document.getElementById('manage-list');
 const loginPanel = document.getElementById('login-panel');
 const adminContent = document.getElementById('admin-content');
 const navLogout = document.getElementById('nav-logout');
 
 fotoInput.addEventListener('change', e=>{
-  if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+  if(e.target.files && e.target.files.length) addFiles(e.target.files);
 });
 ['dragover'].forEach(evt=>dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.add('drag'); }));
 ['dragleave','drop'].forEach(evt=>dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); }));
 dropzone.addEventListener('drop', e=>{
-  if(e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  if(e.dataTransfer.files && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
 });
 
 function handleFile(file){
-  if(!file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = ev=>{
+  return new Promise(resolve=>{
+    if(!file.type.startsWith('image/')){ resolve(null); return; }
+    const reader = new FileReader();
+    reader.onload = ev=>{
     const img = new Image();
     img.onload = ()=>{
       const maxW = 900;
@@ -313,23 +330,50 @@ function handleFile(file){
       canvas.height = img.height * scale;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      pendingImage = canvas.toDataURL('image/jpeg', 0.82);
-      dzPreview.src = pendingImage;
-      dzPreview.style.display = 'block';
-      dropzone.classList.add('has-image');
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
     };
     img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addFiles(files){
+  const images = await Promise.all(Array.from(files).map(handleFile));
+  pendingImages.push(...images.filter(Boolean));
+  renderImagePreviews();
+}
+
+function renderImagePreviews(){
+  dzGallery.innerHTML = pendingImages.map((image, index)=>`<img src="${image}" alt="Vista previa ${index + 1}">`).join('');
+  dzGallery.hidden = pendingImages.length===0;
+  dropzone.classList.toggle('has-image', pendingImages.length>0);
 }
 
 function removeImage(){
-  pendingImage = null;
-  dzPreview.src = '';
-  dzPreview.style.display = 'none';
+  pendingImages = [];
+  renderImagePreviews();
   dropzone.classList.remove('has-image');
   fotoInput.value = '';
 }
+
+function renderSelectedColors(){
+  document.getElementById('selected-colors').innerHTML = selectedColors.map((color, index)=>`<span class="selected-color"><span class="color-swatch" style="background:${color.value}"></span>${escapeHtml(color.name)}<button class="remove-color" type="button" data-remove-color="${index}" aria-label="Quitar ${escapeHtml(color.name)}">&times;</button></span>`).join('');
+  document.querySelectorAll('[data-remove-color]').forEach(button=>button.addEventListener('click', ()=>{
+    selectedColors.splice(Number(button.dataset.removeColor), 1);
+    renderSelectedColors();
+  }));
+}
+
+document.getElementById('add-color-btn').addEventListener('click', ()=>{
+  const picker = document.getElementById('f-color-picker');
+  const nameField = document.getElementById('f-color-name');
+  const name = nameField.value.trim() || `Color ${selectedColors.length + 1}`;
+  if(selectedColors.some(color=>color.name.toLowerCase()===name.toLowerCase())) return;
+  selectedColors.push({ name, value: picker.value });
+  nameField.value = '';
+  renderSelectedColors();
+});
 
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -481,8 +525,8 @@ async function handleSubmit(e){
   const errorEl = document.getElementById('form-error');
   errorEl.textContent = '';
 
-  if(!pendingImage){
-    errorEl.textContent = 'Subí una foto de la prenda antes de publicar.';
+  if(!pendingImages.length){
+    errorEl.textContent = 'Subí al menos una foto de la prenda antes de publicar.';
     return;
   }
 
@@ -492,7 +536,7 @@ async function handleSubmit(e){
   const talle = document.getElementById('f-talle').value;
   const condicion = 'Nuevo';
   const descripcion = document.getElementById('f-desc').value.trim();
-  const colores = document.getElementById('f-colores').value.trim();
+  const colores = JSON.stringify(selectedColors);
 
   if(!nombre || !precio || !categoria || !talle){
     errorEl.textContent = 'Completá todos los campos obligatorios.';
@@ -505,7 +549,7 @@ async function handleSubmit(e){
 
   const item = {
     nombre, precio: Number(precio), categoria, talle, condicion, descripcion, colores,
-    imagen: pendingImage
+    imagen: pendingImages[0], imagenes: JSON.stringify(pendingImages)
   };
 
   try{
@@ -519,6 +563,8 @@ async function handleSubmit(e){
     showToast('Prenda publicada correctamente');
     document.getElementById('upload-form').reset();
     removeImage();
+    selectedColors = [];
+    renderSelectedColors();
     await loadManageList();
   }catch(err){
     console.error(err);
