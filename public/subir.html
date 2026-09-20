@@ -159,6 +159,15 @@
   .manage-fields input, .manage-fields select{ padding:10px 11px; font-size:13px; }
   .manage-description{ grid-column:1 / -1; }
   .manage-colors{ grid-column:1 / -1; }
+  .manage-images{ grid-column:1 / -1; }
+  .manage-color-editor{ display:flex; flex-direction:column; gap:8px; }
+  .manage-color-tools{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .manage-color-tools .color-name{ min-width:130px; }
+  .manage-color-tools .color-picker{ width:42px; height:36px; }
+  .manage-color-list{ display:flex; gap:6px; flex-wrap:wrap; }
+  .manage-photo-input{ color:var(--text-dim); font-size:12px; max-width:100%; }
+  .manage-gallery{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .manage-gallery img{ width:48px; height:60px; object-fit:cover; border-radius:7px; }
   .manage-actions{ display:flex; flex-direction:column; gap:8px; }
   .action-btn{ border:1px solid var(--border); background:var(--glass-strong); color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; white-space:nowrap; }
   .action-btn:hover{ border-color:var(--violet-2); }
@@ -436,6 +445,34 @@ function escapeHtml(value){
   return div.innerHTML;
 }
 
+function parseColors(value){
+  try{
+    const parsed = JSON.parse(value || '[]');
+    if(Array.isArray(parsed)) return parsed.filter(color=>color && color.name).map(color=>({ name:String(color.name), value:/^#[0-9a-f]{6}$/i.test(color.value) ? color.value : '#777777' }));
+  }catch(e){ /* Compatibilidad con colores antiguos guardados como texto. */ }
+  return String(value || '').split(',').map(name=>name.trim()).filter(Boolean).map(name=>({ name, value:'#777777' }));
+}
+
+function parseImages(item){
+  try{
+    const images = JSON.parse(item.imagenes || '[]');
+    if(Array.isArray(images) && images.length) return images.filter(Boolean);
+  }catch(e){ /* Compatibilidad con publicaciones anteriores. */ }
+  return item.imagen ? [item.imagen] : [];
+}
+
+function colorEditorHtml(label, colors, type){
+  return `<div class="manage-color-editor" data-color-editor="${type}">
+    <label>${label}</label>
+    <div class="manage-color-tools">
+      <input class="color-picker" type="color" value="#111111" data-editor-picker="${type}" aria-label="Elegir color">
+      <input class="color-name" type="text" placeholder="Nombre del color" data-editor-name="${type}">
+      <button class="add-color-btn" type="button" data-add-editor-color="${type}">Agregar</button>
+    </div>
+    <div class="manage-color-list" data-editor-list="${type}">${colors.map((color,index)=>`<span class="selected-color"><span class="color-swatch" style="background:${color.value}"></span>${escapeHtml(color.name)}<button class="remove-color" type="button" data-remove-editor-color="${type}" data-color-index="${index}" aria-label="Quitar ${escapeHtml(color.name)}">&times;</button></span>`).join('')}</div>
+  </div>`;
+}
+
 async function loadManageList(){
   try{
     const { data, error } = await window.supabaseClient
@@ -457,6 +494,9 @@ function renderManageList(items){
 
   manageList.innerHTML = items.map(item=>{
     const estado = item.estado || 'Disponible';
+    const availableColors = parseColors(item.colores);
+    const unavailableColors = parseColors(item.colores_no_disponibles);
+    const images = parseImages(item);
     return `<article class="manage-item" data-id="${escapeHtml(item.id)}">
       <img src="${item.imagen || ''}" alt="${escapeHtml(item.nombre)}">
       <div class="manage-fields">
@@ -467,7 +507,8 @@ function renderManageList(items){
         <div><label>Estado</label><select data-field="estado">
           ${['Disponible','Reservada','Vendida','Oculta'].map(option=>`<option ${option===estado ? 'selected' : ''}>${option}</option>`).join('')}
         </select></div>
-        <div class="manage-colors"><label>Colores</label><input data-field="colores" type="text" value="${escapeHtml(item.colores || '')}" placeholder="Ej: Negro, Blanco"></div>
+        <div class="manage-colors">${colorEditorHtml('Colores disponibles', availableColors, 'available')}${colorEditorHtml('Colores no disponibles', unavailableColors, 'unavailable')}</div>
+        <div class="manage-images"><label>Fotos de la prenda</label><input class="manage-photo-input" type="file" accept="image/*" multiple data-photo-input><div class="manage-gallery" data-gallery>${images.map((image,index)=>`<img src="${image}" alt="Foto ${index + 1} de ${escapeHtml(item.nombre)}">`).join('')}</div></div>
         <div class="manage-description"><label>Descripción</label><input data-field="descripcion" type="text" value="${escapeHtml(item.descripcion || '')}"></div>
       </div>
       <div class="manage-actions">
@@ -476,6 +517,41 @@ function renderManageList(items){
       </div>
     </article>`;
   }).join('');
+  manageList.querySelectorAll('[data-add-editor-color]').forEach(button=>button.addEventListener('click', ()=>addManageColor(button)));
+  manageList.querySelectorAll('[data-remove-editor-color]').forEach(button=>button.addEventListener('click', ()=>{
+    const editor = button.closest('[data-color-editor]');
+    button.closest('.selected-color').remove();
+    editor.dataset.changed = 'true';
+  }));
+  manageList.querySelectorAll('[data-photo-input]').forEach(input=>input.addEventListener('change', ()=>previewManageImages(input)));
+}
+
+function addManageColor(button){
+  const type = button.dataset.addEditorColor;
+  const editor = button.closest('[data-color-editor]');
+  const nameInput = editor.querySelector(`[data-editor-name="${type}"]`);
+  const picker = editor.querySelector(`[data-editor-picker="${type}"]`);
+  const name = nameInput.value.trim() || `Color ${editor.querySelectorAll('.selected-color').length + 1}`;
+  const names = Array.from(editor.querySelectorAll('.selected-color')).map(color=>color.textContent.replace('×','').trim().toLowerCase());
+  if(names.includes(name.toLowerCase())) return;
+  const index = editor.querySelectorAll('.selected-color').length;
+  editor.querySelector('[data-editor-list]').insertAdjacentHTML('beforeend', `<span class="selected-color"><span class="color-swatch" style="background:${picker.value}"></span>${escapeHtml(name)}<button class="remove-color" type="button" data-remove-editor-color="${type}" data-color-index="${index}" aria-label="Quitar ${escapeHtml(name)}">&times;</button></span>`);
+  editor.dataset.changed = 'true';
+  nameInput.value = '';
+  editor.querySelectorAll('[data-remove-editor-color]').forEach(removeButton=>removeButton.onclick = ()=>{
+    removeButton.closest('.selected-color').remove();
+    editor.dataset.changed = 'true';
+  });
+}
+
+async function previewManageImages(input){
+  const card = input.closest('.manage-item');
+  const files = Array.from(input.files || []).filter(file=>file.type.startsWith('image/'));
+  if(!files.length) return;
+  const images = await Promise.all(files.map(handleFile));
+  const gallery = card.querySelector('[data-gallery]');
+  gallery.innerHTML = images.filter(Boolean).map((image,index)=>`<img src="${image}" alt="Nueva foto ${index + 1}">`).join('');
+  card.dataset.images = JSON.stringify(images.filter(Boolean));
 }
 
 async function saveItem(button){
@@ -484,6 +560,21 @@ async function saveItem(button){
   card.querySelectorAll('[data-field]').forEach(field=>{
     payload[field.dataset.field] = field.type === 'number' ? Number(field.value) : field.value.trim();
   });
+  const colorValues = {};
+  card.querySelectorAll('[data-color-editor]').forEach(editor=>{
+    const colors = Array.from(editor.querySelectorAll('.selected-color')).map(color=>({
+      name: color.querySelector('.color-swatch').nextSibling.textContent.trim(),
+      value: color.querySelector('.color-swatch').style.backgroundColor
+    }));
+    colorValues[editor.dataset.colorEditor] = colors;
+  });
+  payload.colores = JSON.stringify(colorValues.available || []);
+  payload.colores_no_disponibles = JSON.stringify(colorValues.unavailable || []);
+  if(card.dataset.images) {
+    const images = JSON.parse(card.dataset.images);
+    payload.imagen = images[0] || '';
+    payload.imagenes = JSON.stringify(images);
+  }
   button.disabled = true;
 
   try{
